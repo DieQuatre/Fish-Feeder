@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="ESP8266 Otomatik Balık Yemleyici - Giriş Yap">
+  <title>Balık Yemleyici — Giriş</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🐟</text></svg>">
+</head>
+<body>
+  <div class="bg-effects">
+    <div class="bg-orb bg-orb-1"></div>
+    <div class="bg-orb bg-orb-2"></div>
+    <div class="bg-orb bg-orb-3"></div>
+  </div>
+
+  <div class="login-container">
+    <div class="login-card">
+      <div class="login-logo">
+        <span class="icon">🐟</span>
+        <h1>Fish Feeder</h1>
+        <p>Otomatik Balık Yemleyici Kontrol Paneli</p>
+      </div>
+
+      <div id="errorMsg" class="error-msg"></div>
+      <div id="successMsg" class="success-msg"></div>
+
+      <!-- Login Form -->
+      <form id="loginForm">
+        <div class="form-group">
+          <label for="loginUsername">Kullanıcı Adı</label>
+          <input type="text" id="loginUsername" placeholder="Kullanıcı adınızı girin" autocomplete="username" required>
+        </div>
+        <div class="form-group">
+          <label for="loginPassword">Şifre</label>
+          <input type="password" id="loginPassword" placeholder="Şifrenizi girin" autocomplete="current-password" required>
+        </div>
+        <button type="submit" class="btn btn-primary" id="loginBtn">
+          🔓 Giriş Yap
+        </button>
+      </form>
+
+      <!-- Register Form (hidden by default) -->
+      <form id="registerForm" style="display:none;">
+        <div class="form-group">
+          <label for="regUsername">Kullanıcı Adı</label>
+          <input type="text" id="regUsername" placeholder="En az 3 karakter" autocomplete="username" required>
+        </div>
+        <div class="form-group">
+          <label for="regPassword">Şifre</label>
+          <input type="password" id="regPassword" placeholder="En az 6 karakter" autocomplete="new-password" required>
+        </div>
+        <div class="form-group">
+          <label for="regPasswordConfirm">Şifre Tekrar</label>
+          <input type="password" id="regPasswordConfirm" placeholder="Şifrenizi tekrar girin" autocomplete="new-password" required>
+        </div>
+        <button type="submit" class="btn btn-primary" id="registerBtn">
+          ✨ Kayıt Ol
+        </button>
+      </form>
+
+      <div class="toggle-link" id="toggleLink">
+        Hesabınız yok mu? <a href="#" id="toggleAuth">Kayıt Ol</a>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/auth.js"></script>
+</body>
+</html>

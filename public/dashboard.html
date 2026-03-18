@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="ESP8266 Otomatik Balık Yemleyici - Dashboard">
+  <title>Fish Feeder — Dashboard</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🐟</text></svg>">
+</head>
+<body>
+  <div class="bg-effects">
+    <div class="bg-orb bg-orb-1"></div>
+    <div class="bg-orb bg-orb-2"></div>
+    <div class="bg-orb bg-orb-3"></div>
+  </div>
+
+  <div class="dashboard-container">
+    <!-- Header -->
+    <header class="header">
+      <div class="header-left">
+        <span class="logo-icon">🐟</span>
+        <h1>Fish Feeder Dashboard</h1>
+      </div>
+      <div class="header-right">
+        <div class="user-badge">
+          <div class="avatar" id="userAvatar">U</div>
+          <span id="userName">Kullanıcı</span>
+        </div>
+        <button class="btn-logout" id="logoutBtn" onclick="logout()">Çıkış</button>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- No Device State -->
+      <div id="noDeviceState" class="section no-device" style="display:none;">
+        <span class="icon">📡</span>
+        <h3>Henüz cihaz eklenmemiş</h3>
+        <p>Dashboard'u kullanmak için bir ESP8266 cihazı eklemeniz gerekiyor.</p>
+        <button class="btn btn-primary btn-sm" onclick="openAddDeviceModal()">
+          ➕ Cihaz Ekle
+        </button>
+      </div>
+
+      <!-- Device Dashboard (shown when device exists) -->
+      <div id="deviceDashboard" style="display:none;">
+        <!-- Status Cards -->
+        <div class="status-grid">
+          <!-- Online Status -->
+          <div class="status-card online" id="onlineCard">
+            <div class="card-header">
+              <span class="card-label">Cihaz Durumu</span>
+              <span class="card-icon">📡</span>
+            </div>
+            <div class="card-value">
+              <span class="pulse-dot offline" id="statusDot"></span>
+              <span id="statusText" class="status-offline">Çevrimdışı</span>
+            </div>
+            <div class="card-sub" id="lastSeenText">Henüz bağlanmadı</div>
+          </div>
+
+          <!-- Food Level -->
+          <div class="status-card food" id="foodCard">
+            <div class="card-header">
+              <span class="card-label">Yem Seviyesi</span>
+              <span class="card-icon">🥣</span>
+            </div>
+            <div class="card-value" id="foodLevelValue">—%</div>
+            <div class="food-bar-container">
+              <div class="food-bar-bg">
+                <div class="food-bar-fill" id="foodBar" style="width: 0%"></div>
+              </div>
+            </div>
+            <div class="card-sub" id="foodLevelText">Sensör verisi bekleniyor</div>
+          </div>
+
+          <!-- Feed Count Today -->
+          <div class="status-card feed">
+            <div class="card-header">
+              <span class="card-label">Bugün Besleme</span>
+              <span class="card-icon">🍽️</span>
+            </div>
+            <div class="card-value" id="feedCountToday">0</div>
+            <div class="card-sub" id="feedCountSub">Bugün hiç besleme yapılmadı</div>
+          </div>
+
+          <!-- Last Feed Time -->
+          <div class="status-card time">
+            <div class="card-header">
+              <span class="card-label">Son Besleme</span>
+              <span class="card-icon">🕐</span>
+            </div>
+            <div class="card-value" id="lastFeedTime" style="font-size:1.2rem;">—</div>
+            <div class="card-sub" id="lastFeedSub">Henüz besleme yapılmadı</div>
+          </div>
+        </div>
+
+        <!-- Feed Button Section -->
+        <div class="section">
+          <div class="section-header">
+            <h2 class="section-title">🎯 Hızlı Besleme</h2>
+          </div>
+          <p style="color:var(--text-secondary); margin-bottom:16px; font-size:0.92rem;">
+            Butona basarak balıklarınızı hemen besleyebilirsiniz. Komut cihaza iletilecektir.
+          </p>
+          <button class="btn btn-success btn-feed" id="feedBtn" onclick="sendFeedCommand()">
+            🐟 Şimdi Besle
+          </button>
+        </div>
+
+        <!-- Device Info + Token -->
+        <div class="section">
+          <div class="section-header">
+            <h2 class="section-title">🔑 Cihaz Bilgileri</h2>
+            <button class="btn btn-danger btn-sm" id="deleteDeviceBtn" onclick="deleteDevice()">
+              🗑️ Cihazı Sil
+            </button>
+          </div>
+          <p style="color:var(--text-secondary); font-size:0.88rem; margin-bottom:4px;">
+            <strong>Cihaz Adı:</strong> <span id="deviceName">—</span>
+          </p>
+          <p style="color:var(--text-secondary); font-size:0.88rem;">
+            Bu token'ı Arduino kodunuzdaki <code>DEVICE_TOKEN</code> alanına yapıştırın.
+          </p>
+          <div class="token-box">
+            <code id="deviceToken">—</code>
+            <button class="btn-copy" onclick="copyToken()">📋 Kopyala</button>
+          </div>
+        </div>
+
+        <!-- Feed History -->
+        <div class="section">
+          <div class="section-header">
+            <h2 class="section-title">📜 Besleme Geçmişi</h2>
+            <button class="btn btn-sm btn-ghost" onclick="openAddDeviceModal()">
+              ➕ Yeni Cihaz
+            </button>
+          </div>
+          <div id="feedHistoryContainer">
+            <table class="feed-table">
+              <thead>
+                <tr>
+                  <th>Tarih & Saat</th>
+                  <th>Tetikleyen</th>
+                </tr>
+              </thead>
+              <tbody id="feedHistoryBody">
+              </tbody>
+            </table>
+            <div id="emptyHistory" class="empty-state">
+              Henüz besleme kaydı yok.
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Add Device Modal -->
+  <div class="modal-overlay" id="addDeviceModal">
+    <div class="modal">
+      <h2>➕ Yeni Cihaz Ekle</h2>
+      <div class="form-group">
+        <label for="newDeviceName">Cihaz Adı</label>
+        <input type="text" id="newDeviceName" placeholder="Örn: Salon Akvaryumu" value="Balık Yemleyici">
+      </div>
+      <p style="color:var(--text-muted); font-size:0.85rem;">
+        Cihaz eklendiğinde bir API token oluşturulacak. Bu token'ı ESP8266 kodunuza eklemeniz gerekecek.
+      </p>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="closeAddDeviceModal()">İptal</button>
+        <button class="btn btn-primary" onclick="addDevice()">Cihaz Ekle</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/dashboard.js"></script>
+</body>
+</html>
