@@ -324,6 +324,19 @@ async function openProfileModal() {
   if (data) {
     document.getElementById('profileUsername').value = data.username || '';
     document.getElementById('profileEmail').value = data.email || '';
+    
+    const saveBtn = document.getElementById('profileSaveBtn');
+    if (data.profile_updated) {
+      document.getElementById('profileUsername').disabled = true;
+      document.getElementById('profileEmail').disabled = true;
+      saveBtn.disabled = true;
+      saveBtn.textContent = t('profile.alreadyUpdated');
+    } else {
+      document.getElementById('profileUsername').disabled = false;
+      document.getElementById('profileEmail').disabled = false;
+      saveBtn.disabled = false;
+      saveBtn.textContent = t('profile.saveBtn');
+    }
   }
 
   document.getElementById('profileModal').classList.add('active');
@@ -372,6 +385,12 @@ document.getElementById('profileForm').addEventListener('submit', async (e) => {
     
     msgEl.textContent = t('profile.saved');
     msgEl.style.display = 'block';
+
+    // Disable fields after first update
+    document.getElementById('profileUsername').disabled = true;
+    document.getElementById('profileEmail').disabled = true;
+    document.getElementById('profileSaveBtn').disabled = true;
+    document.getElementById('profileSaveBtn').textContent = t('profile.alreadyUpdated');
   } catch (err) {
     errorEl.textContent = err.message || t('err.serverDown');
     errorEl.style.display = 'block';

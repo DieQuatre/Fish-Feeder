@@ -20,10 +20,11 @@ async function initDB() {
       )
     `);
 
-    // Add email column if it doesn't exist (for existing databases)
+    // Add email and profile_updated columns if they don't exist
     await client.query(`
       DO $$ BEGIN
         ALTER TABLE users ADD COLUMN IF NOT EXISTS email TEXT UNIQUE;
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_updated BOOLEAN DEFAULT FALSE;
       EXCEPTION WHEN OTHERS THEN NULL;
       END $$;
     `);

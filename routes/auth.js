@@ -208,7 +208,7 @@ router.post('/reset-password', async (req, res) => {
 // GET /api/auth/me
 router.get('/me', authenticateToken, async (req, res) => {
   try {
-    const result = await pool.query('SELECT id, username, email FROM users WHERE id = $1', [req.user.id]);
+    const result = await pool.query('SELECT id, username, email, profile_updated FROM users WHERE id = $1', [req.user.id]);
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'User not found.' });
     }
@@ -224,6 +224,11 @@ router.put('/profile', authenticateToken, async (req, res) => {
   try {
     const { username, email } = req.body;
     
+    const userCheck = await pool.query('SELECT profile_updated FROM users WHERE id = $1', [req.user.id]);
+    if (userCheck.rows.length > 0 && userCheck.rows[0].profile_updated) {
+      return res.status(403).json({ error: 'Profile can only be updated once.' });
+    }
+
     if (!username || !email) {
       return res.status(400).json({ error: 'Username and email are required.' });
     }
@@ -245,7 +250,7 @@ router.put('/profile', authenticateToken, async (req, res) => {
       return res.status(409).json({ error: 'This email is already registered.' });
     }
 
-    await pool.query('UPDATE users SET username = $1, email = $2 WHERE id = $3', [username, email, req.user.id]);
+    await pool.query('UPDATE users SET username = $1, email = $2, profile_updated = TRUE WHERE id = $3', [username, email, req.user.id]);
 
     res.json({ message: 'Profile updated successfully!', user: { id: req.user.id, username, email } });
   } catch (err) {

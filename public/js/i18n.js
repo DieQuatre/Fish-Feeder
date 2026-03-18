@@ -172,6 +172,7 @@ const translations = {
     "profile.saved": "Profile updated successfully!",
     "profile.passwordSaved": "Password changed successfully!",
     "profile.passwordShort": "New password must be at least 6 characters.",
+    "profile.alreadyUpdated": "Profile updated once (locked)",
 
     "err.usernamePassword": "Username and password are required.",
     "err.fillAll": "Please fill in all fields.",
@@ -349,6 +350,7 @@ const translations = {
     "profile.saved": "Profil başarıyla güncellendi!",
     "profile.passwordSaved": "Şifreniz başarıyla değiştirildi!",
     "profile.passwordShort": "Yeni şifre en az 6 karakter olmalıdır.",
+    "profile.alreadyUpdated": "Sadece 1 kez güncellenebilir",
 
     "err.usernamePassword": "Kullanıcı adı ve şifre gerekli.",
     "err.fillAll": "Tüm alanları doldurun.",
