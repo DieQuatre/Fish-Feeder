@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 const { pool } = require('../db/database');
+const { authenticateToken } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -58,7 +59,7 @@ router.post('/register', async (req, res) => {
     res.status(201).json({
       message: 'Registration successful!',
       token,
-      user: { id, username }
+      user: { id, username, email }
     });
   } catch (err) {
     console.error('Register error:', err);
@@ -91,7 +92,7 @@ router.post('/login', async (req, res) => {
     res.json({
       message: 'Login successful!',
       token,
-      user: { id: user.id, username: user.username }
+      user: { id: user.id, username: user.username, email: user.email }
     });
   } catch (err) {
     console.error('Login error:', err);
@@ -200,6 +201,87 @@ router.post('/reset-password', async (req, res) => {
     res.json({ message: 'Password reset successful! You can now sign in.' });
   } catch (err) {
     console.error('Reset password error:', err);
+    res.status(500).json({ error: 'Server error.' });
+  }
+});
+
+// GET /api/auth/me
+router.get('/me', authenticateToken, async (req, res) => {
+  try {
+    const result = await pool.query('SELECT id, username, email FROM users WHERE id = $1', [req.user.id]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found.' });
+    }
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('Get profile error:', err);
+    res.status(500).json({ error: 'Server error.' });
+  }
+});
+
+// PUT /api/auth/profile
+router.put('/profile', authenticateToken, async (req, res) => {
+  try {
+    const { username, email } = req.body;
+    
+    if (!username || !email) {
+      return res.status(400).json({ error: 'Username and email are required.' });
+    }
+    if (username.length < 3) {
+      return res.status(400).json({ error: 'Username must be at least 3 characters.' });
+    }
+    if (!/\S+@\S+\.\S+/.test(email)) {
+      return res.status(400).json({ error: 'Please enter a valid email address.' });
+    }
+
+    // Check uniqueness (exclude current user)
+    const existingUser = await pool.query('SELECT id FROM users WHERE username = $1 AND id != $2', [username, req.user.id]);
+    if (existingUser.rows.length > 0) {
+      return res.status(409).json({ error: 'This username is already taken.' });
+    }
+
+    const existingEmail = await pool.query('SELECT id FROM users WHERE email = $1 AND id != $2', [email, req.user.id]);
+    if (existingEmail.rows.length > 0) {
+      return res.status(409).json({ error: 'This email is already registered.' });
+    }
+
+    await pool.query('UPDATE users SET username = $1, email = $2 WHERE id = $3', [username, email, req.user.id]);
+
+    res.json({ message: 'Profile updated successfully!', user: { id: req.user.id, username, email } });
+  } catch (err) {
+    console.error('Update profile error:', err);
+    res.status(500).json({ error: 'Server error.' });
+  }
+});
+
+// PUT /api/auth/password
+router.put('/password', authenticateToken, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ error: 'Current password and new password are required.' });
+    }
+    if (newPassword.length < 6) {
+      return res.status(400).json({ error: 'New password must be at least 6 characters.' });
+    }
+
+    const result = await pool.query('SELECT password_hash FROM users WHERE id = $1', [req.user.id]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found.' });
+    }
+
+    const valid = bcrypt.compareSync(currentPassword, result.rows[0].password_hash);
+    if (!valid) {
+      return res.status(401).json({ error: 'Incorrect current password.' });
+    }
+
+    const password_hash = bcrypt.hashSync(newPassword, 10);
+    await pool.query('UPDATE users SET password_hash = $1 WHERE id = $2', [password_hash, req.user.id]);
+
+    res.json({ message: 'Password changed successfully!' });
+  } catch (err) {
+    console.error('Change password error:', err);
     res.status(500).json({ error: 'Server error.' });
   }
 });

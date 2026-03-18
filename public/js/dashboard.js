@@ -314,6 +314,114 @@ function logout() {
   window.location.href = '/';
 }
 
+// ==================== PROFILE MODAL ====================
+async function openProfileModal() {
+  document.getElementById('profileMsg').style.display = 'none';
+  document.getElementById('profileError').style.display = 'none';
+
+  // Fetch latest profile info
+  const data = await apiGet('/api/auth/me');
+  if (data) {
+    document.getElementById('profileUsername').value = data.username || '';
+    document.getElementById('profileEmail').value = data.email || '';
+  }
+
+  document.getElementById('profileModal').classList.add('active');
+}
+
+function closeProfileModal() {
+  document.getElementById('profileModal').classList.remove('active');
+  document.getElementById('passwordForm').reset();
+}
+
+document.getElementById('profileModal').addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) closeProfileModal();
+});
+
+document.getElementById('profileForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const username = document.getElementById('profileUsername').value.trim();
+  const email = document.getElementById('profileEmail').value.trim();
+  
+  const errorEl = document.getElementById('profileError');
+  const msgEl = document.getElementById('profileMsg');
+  errorEl.style.display = 'none';
+  msgEl.style.display = 'none';
+
+  const btn = document.getElementById('profileSaveBtn');
+  btn.disabled = true;
+
+  try {
+    const res = await fetch(`${API_BASE}/api/auth/profile`, {
+      method: 'PUT',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ username, email })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    
+    // Update local user data
+    localStorage.setItem('ff_user', JSON.stringify(data.user));
+    document.getElementById('userName').textContent = data.user.username;
+    if (data.user.username) {
+      document.getElementById('userAvatar').textContent = data.user.username.charAt(0).toUpperCase();
+    }
+    
+    msgEl.textContent = t('profile.saved');
+    msgEl.style.display = 'block';
+  } catch (err) {
+    errorEl.textContent = err.message || t('err.serverDown');
+    errorEl.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+document.getElementById('passwordForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const currentPassword = document.getElementById('profileCurrentPassword').value;
+  const newPassword = document.getElementById('profileNewPassword').value;
+  
+  const errorEl = document.getElementById('profileError');
+  const msgEl = document.getElementById('profileMsg');
+  errorEl.style.display = 'none';
+  msgEl.style.display = 'none';
+
+  if (newPassword.length < 6) {
+    errorEl.textContent = t('profile.passwordShort');
+    errorEl.style.display = 'block';
+    return;
+  }
+
+  const btn = document.getElementById('passwordSaveBtn');
+  btn.disabled = true;
+
+  try {
+    const res = await fetch(`${API_BASE}/api/auth/password`, {
+      method: 'PUT',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ currentPassword, newPassword })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    
+    msgEl.textContent = t('profile.passwordSaved');
+    msgEl.style.display = 'block';
+    document.getElementById('passwordForm').reset();
+  } catch (err) {
+    errorEl.textContent = err.message || t('err.serverDown');
+    errorEl.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+  }
+});
+
 // ==================== POLLING ====================
 function startPolling() {
   // Poll every 5 seconds

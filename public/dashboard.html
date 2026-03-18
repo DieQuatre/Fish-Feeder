@@ -23,7 +23,7 @@
       </div>
       <div class="header-right">
         <button class="lang-toggle" onclick="toggleLang()" style="background:transparent;border:1px solid var(--border-glass);color:var(--text-secondary);padding:4px 12px;border-radius:20px;cursor:pointer;font-size:0.8rem;font-family:'Inter',sans-serif;">🇹🇷 TR</button>
-        <div class="user-badge">
+        <div class="user-badge" style="cursor:pointer;" onclick="openProfileModal()" title="Profile Settings">
           <div class="avatar" id="userAvatar">U</div>
           <span id="userName">User</span>
         </div>
@@ -151,7 +151,7 @@
   </div>
 
   <!-- Add Device Modal -->
-  <div class="modal-overlay" id="addDeviceModal">
+  <div class="modal-overlay" id="addDeviceModal" style="display:none;">
     <div class="modal">
       <h2 data-i18n="dash.modal.title">➕ Add New Device</h2>
       <div class="form-group">
@@ -164,6 +164,46 @@
       <div class="modal-actions">
         <button class="btn btn-ghost" onclick="closeAddDeviceModal()" data-i18n="dash.modal.cancel">Cancel</button>
         <button class="btn btn-primary" onclick="addDevice()" data-i18n="dash.modal.add">Add Device</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Profile Modal -->
+  <div class="modal-overlay" id="profileModal" style="display:none;">
+    <div class="modal" style="max-height:90vh; overflow-y:auto;">
+      <h2 data-i18n="profile.title">👤 Profile Settings</h2>
+      <div id="profileMsg" class="success-msg" style="display:none; font-size:0.85rem; padding:8px; margin-bottom:12px;"></div>
+      <div id="profileError" class="error-msg" style="display:none; font-size:0.85rem; padding:8px; margin-bottom:12px;"></div>
+      
+      <form id="profileForm">
+        <div class="form-group">
+          <label for="profileUsername" data-i18n="profile.username">Username</label>
+          <input type="text" id="profileUsername" required>
+        </div>
+        <div class="form-group">
+          <label for="profileEmail" data-i18n="profile.email">Email Address</label>
+          <input type="email" id="profileEmail" required>
+        </div>
+        <button type="submit" class="btn btn-primary" id="profileSaveBtn" data-i18n="profile.saveBtn">💾 Save Profile</button>
+      </form>
+
+      <hr style="border:0; border-top:1px solid var(--border-glass); margin:24px 0;">
+
+      <h3 data-i18n="profile.passwordTitle" style="margin-bottom:12px; font-size:1.1rem; color:var(--text-primary);">Change Password</h3>
+      <form id="passwordForm">
+        <div class="form-group">
+          <label for="profileCurrentPassword" data-i18n="profile.currentPassword">Current Password</label>
+          <input type="password" id="profileCurrentPassword" required>
+        </div>
+        <div class="form-group">
+          <label for="profileNewPassword" data-i18n="profile.newPassword">New Password</label>
+          <input type="password" id="profileNewPassword" data-i18n="profile.newPassword.placeholder" placeholder="At least 6 characters" required>
+        </div>
+        <button type="submit" class="btn btn-primary" id="passwordSaveBtn" data-i18n="profile.passwordBtn">🔐 Change Password</button>
+      </form>
+
+      <div class="modal-actions" style="margin-top:24px;">
+        <button class="btn btn-ghost" onclick="closeProfileModal()" data-i18n="profile.close">Close</button>
       </div>
     </div>
   </div>
