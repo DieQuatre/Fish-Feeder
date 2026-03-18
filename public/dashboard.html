@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="ESP8266 Otomatik Balık Yemleyici - Dashboard">
+  <meta name="description" content="ESP8266 Automatic Fish Feeder - Dashboard">
   <title>Fish Feeder — Dashboard</title>
   <link rel="stylesheet" href="css/style.css">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🐟</text></svg>">
@@ -16,54 +16,50 @@
   </div>
 
   <div class="dashboard-container">
-    <!-- Header -->
     <header class="header">
       <div class="header-left">
         <span class="logo-icon">🐟</span>
-        <h1>Fish Feeder Dashboard</h1>
+        <h1 data-i18n="dash.title">Fish Feeder Dashboard</h1>
       </div>
       <div class="header-right">
+        <button class="lang-toggle" onclick="toggleLang()" style="background:transparent;border:1px solid var(--border-glass);color:var(--text-secondary);padding:4px 12px;border-radius:20px;cursor:pointer;font-size:0.8rem;font-family:'Inter',sans-serif;">🇹🇷 TR</button>
         <div class="user-badge">
           <div class="avatar" id="userAvatar">U</div>
-          <span id="userName">Kullanıcı</span>
+          <span id="userName">User</span>
         </div>
-        <button class="btn-logout" id="logoutBtn" onclick="logout()">Çıkış</button>
+        <button class="btn-logout" id="logoutBtn" onclick="logout()" data-i18n="dash.logout">Logout</button>
       </div>
     </header>
 
-    <!-- Main Content -->
     <main class="main-content">
       <!-- No Device State -->
       <div id="noDeviceState" class="section no-device" style="display:none;">
         <span class="icon">📡</span>
-        <h3>Henüz cihaz eklenmemiş</h3>
-        <p>Dashboard'u kullanmak için bir ESP8266 cihazı eklemeniz gerekiyor.</p>
-        <button class="btn btn-primary btn-sm" onclick="openAddDeviceModal()">
-          ➕ Cihaz Ekle
+        <h3 data-i18n="dash.noDevice.title">No device added yet</h3>
+        <p data-i18n="dash.noDevice.desc">You need to add an ESP8266 device to use the dashboard.</p>
+        <button class="btn btn-primary btn-sm" onclick="openAddDeviceModal()" data-i18n="dash.noDevice.btn">
+          ➕ Add Device
         </button>
       </div>
 
-      <!-- Device Dashboard (shown when device exists) -->
+      <!-- Device Dashboard -->
       <div id="deviceDashboard" style="display:none;">
-        <!-- Status Cards -->
         <div class="status-grid">
-          <!-- Online Status -->
           <div class="status-card online" id="onlineCard">
             <div class="card-header">
-              <span class="card-label">Cihaz Durumu</span>
+              <span class="card-label" data-i18n="dash.status.label">Device Status</span>
               <span class="card-icon">📡</span>
             </div>
             <div class="card-value">
               <span class="pulse-dot offline" id="statusDot"></span>
-              <span id="statusText" class="status-offline">Çevrimdışı</span>
+              <span id="statusText" class="status-offline" data-i18n="dash.status.offline">Offline</span>
             </div>
-            <div class="card-sub" id="lastSeenText">Henüz bağlanmadı</div>
+            <div class="card-sub" id="lastSeenText" data-i18n="dash.status.notConnected">Not connected yet</div>
           </div>
 
-          <!-- Food Level -->
           <div class="status-card food" id="foodCard">
             <div class="card-header">
-              <span class="card-label">Yem Seviyesi</span>
+              <span class="card-label" data-i18n="dash.food.label">Food Level</span>
               <span class="card-icon">🥣</span>
             </div>
             <div class="card-value" id="foodLevelValue">—%</div>
@@ -72,87 +68,81 @@
                 <div class="food-bar-fill" id="foodBar" style="width: 0%"></div>
               </div>
             </div>
-            <div class="card-sub" id="foodLevelText">Sensör verisi bekleniyor</div>
+            <div class="card-sub" id="foodLevelText" data-i18n="dash.food.waiting">Waiting for sensor data</div>
           </div>
 
-          <!-- Feed Count Today -->
           <div class="status-card feed">
             <div class="card-header">
-              <span class="card-label">Bugün Besleme</span>
+              <span class="card-label" data-i18n="dash.feedCount.label">Today's Feeds</span>
               <span class="card-icon">🍽️</span>
             </div>
             <div class="card-value" id="feedCountToday">0</div>
-            <div class="card-sub" id="feedCountSub">Bugün hiç besleme yapılmadı</div>
+            <div class="card-sub" id="feedCountSub" data-i18n="dash.feedCount.none">No feeding done today</div>
           </div>
 
-          <!-- Last Feed Time -->
           <div class="status-card time">
             <div class="card-header">
-              <span class="card-label">Son Besleme</span>
+              <span class="card-label" data-i18n="dash.lastFeed.label">Last Feed</span>
               <span class="card-icon">🕐</span>
             </div>
             <div class="card-value" id="lastFeedTime" style="font-size:1.2rem;">—</div>
-            <div class="card-sub" id="lastFeedSub">Henüz besleme yapılmadı</div>
+            <div class="card-sub" id="lastFeedSub" data-i18n="dash.lastFeed.none">No feeding yet</div>
           </div>
         </div>
 
-        <!-- Feed Button Section -->
         <div class="section">
           <div class="section-header">
-            <h2 class="section-title">🎯 Hızlı Besleme</h2>
+            <h2 class="section-title" data-i18n="dash.quickFeed.title">🎯 Quick Feed</h2>
           </div>
-          <p style="color:var(--text-secondary); margin-bottom:16px; font-size:0.92rem;">
-            Butona basarak balıklarınızı hemen besleyebilirsiniz. Komut cihaza iletilecektir.
+          <p style="color:var(--text-secondary); margin-bottom:16px; font-size:0.92rem;" data-i18n="dash.quickFeed.desc">
+            Press the button to feed your fish immediately. The command will be sent to the device.
           </p>
-          <button class="btn btn-success btn-feed" id="feedBtn" onclick="sendFeedCommand()">
-            🐟 Şimdi Besle
+          <button class="btn btn-success btn-feed" id="feedBtn" onclick="sendFeedCommand()" data-i18n="dash.quickFeed.btn">
+            🐟 Feed Now
           </button>
         </div>
 
-        <!-- Device Info + Token -->
         <div class="section">
           <div class="section-header">
-            <h2 class="section-title">🔑 Cihaz Bilgileri</h2>
-            <button class="btn btn-danger btn-sm" id="deleteDeviceBtn" onclick="deleteDevice()">
-              🗑️ Cihazı Sil
+            <h2 class="section-title" data-i18n="dash.device.title">🔑 Device Info</h2>
+            <button class="btn btn-danger btn-sm" id="deleteDeviceBtn" onclick="deleteDevice()" data-i18n="dash.device.delete">
+              🗑️ Delete Device
             </button>
           </div>
           <p style="color:var(--text-secondary); font-size:0.88rem; margin-bottom:4px;">
-            <strong>Cihaz Adı:</strong> <span id="deviceName">—</span>
+            <strong data-i18n="dash.device.name">Device Name:</strong> <span id="deviceName">—</span>
           </p>
-          <p style="color:var(--text-secondary); font-size:0.88rem;">
-            Bu token'ı Arduino kodunuzdaki <code>DEVICE_TOKEN</code> alanına yapıştırın.
+          <p style="color:var(--text-secondary); font-size:0.88rem;" data-i18n="dash.device.tokenInfo">
+            Paste this token into the DEVICE_TOKEN field in your Arduino code.
           </p>
           <div class="token-box">
             <code id="deviceToken">—</code>
             <div style="display:flex; gap:8px;">
               <button class="btn-copy" id="toggleTokenBtn" onclick="toggleToken()">👁️</button>
-              <button class="btn-copy" onclick="copyToken()">📋 Kopyala</button>
+              <button class="btn-copy" onclick="copyToken()" data-i18n="dash.device.copy">📋 Copy</button>
             </div>
           </div>
         </div>
 
-        <!-- Feed History -->
         <div class="section">
           <div class="section-header">
-            <h2 class="section-title">📜 Besleme Geçmişi</h2>
-            <button class="btn btn-sm btn-ghost" onclick="openAddDeviceModal()">
-              ➕ Yeni Cihaz
+            <h2 class="section-title" data-i18n="dash.history.title">📜 Feed History</h2>
+            <button class="btn btn-sm btn-ghost" onclick="openAddDeviceModal()" data-i18n="dash.history.newDevice">
+              ➕ New Device
             </button>
           </div>
           <div id="feedHistoryContainer">
             <table class="feed-table">
               <thead>
                 <tr>
-                  <th>Tarih & Saat</th>
-                  <th>Tetikleyen</th>
+                  <th data-i18n="dash.history.date">Date & Time</th>
+                  <th data-i18n="dash.history.trigger">Triggered By</th>
                 </tr>
               </thead>
-              <tbody id="feedHistoryBody">
-              </tbody>
+              <tbody id="feedHistoryBody"></tbody>
             </table>
-            <div id="emptyHistory" class="empty-state">
-              Henüz besleme kaydı yok.
+            <div id="emptyHistory" class="empty-state" data-i18n="dash.history.empty">
+              No feed records yet.
             </div>
           </div>
         </div>
@@ -163,21 +153,22 @@
   <!-- Add Device Modal -->
   <div class="modal-overlay" id="addDeviceModal">
     <div class="modal">
-      <h2>➕ Yeni Cihaz Ekle</h2>
+      <h2 data-i18n="dash.modal.title">➕ Add New Device</h2>
       <div class="form-group">
-        <label for="newDeviceName">Cihaz Adı</label>
-        <input type="text" id="newDeviceName" placeholder="Örn: Salon Akvaryumu" value="Balık Yemleyici">
+        <label for="newDeviceName" data-i18n="dash.modal.label">Device Name</label>
+        <input type="text" id="newDeviceName" data-i18n="dash.modal.placeholder" placeholder="E.g. Living Room Aquarium" value="Fish Feeder">
       </div>
-      <p style="color:var(--text-muted); font-size:0.85rem;">
-        Cihaz eklendiğinde bir API token oluşturulacak. Bu token'ı ESP8266 kodunuza eklemeniz gerekecek.
+      <p style="color:var(--text-muted); font-size:0.85rem;" data-i18n="dash.modal.info">
+        A unique API token will be generated when the device is added. You'll need to add this token to your ESP8266 code.
       </p>
       <div class="modal-actions">
-        <button class="btn btn-ghost" onclick="closeAddDeviceModal()">İptal</button>
-        <button class="btn btn-primary" onclick="addDevice()">Cihaz Ekle</button>
+        <button class="btn btn-ghost" onclick="closeAddDeviceModal()" data-i18n="dash.modal.cancel">Cancel</button>
+        <button class="btn btn-primary" onclick="addDevice()" data-i18n="dash.modal.add">Add Device</button>
       </div>
     </div>
   </div>
 
+  <script src="js/i18n.js"></script>
   <script src="js/dashboard.js"></script>
 </body>
 </html>

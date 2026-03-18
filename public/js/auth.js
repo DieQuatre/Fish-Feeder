@@ -18,12 +18,10 @@ document.getElementById('toggleAuth').addEventListener('click', (e) => {
   document.getElementById('loginForm').style.display = isLogin ? 'block' : 'none';
   document.getElementById('registerForm').style.display = isLogin ? 'none' : 'block';
   document.getElementById('toggleLink').innerHTML = isLogin
-    ? 'Hesabınız yok mu? <a href="#" id="toggleAuth">Kayıt Ol</a>'
-    : 'Zaten hesabınız var mı? <a href="#" id="toggleAuth">Giriş Yap</a>';
+    ? `<span data-i18n="login.noAccount">${t('login.noAccount')}</span> <a href="#" id="toggleAuth" data-i18n="login.register">${t('login.register')}</a>`
+    : `<span data-i18n="login.hasAccount">${t('login.hasAccount')}</span> <a href="#" id="toggleAuth" data-i18n="login.signin">${t('login.signin')}</a>`;
 
-  // Re-attach event listener
   document.getElementById('toggleAuth').addEventListener('click', arguments.callee.bind(null, e));
-
   hideMessages();
 });
 
@@ -55,7 +53,7 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
   const password = document.getElementById('loginPassword').value;
 
   if (!username || !password) {
-    showError('Kullanıcı adı ve şifre gerekli.');
+    showError(t('err.usernamePassword'));
     return;
   }
 
@@ -69,7 +67,7 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
     const data = await res.json();
 
     if (!res.ok) {
-      showError(data.error || 'Giriş başarısız.');
+      showError(data.error || 'Login failed.');
       return;
     }
 
@@ -77,7 +75,7 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
     localStorage.setItem('ff_user', JSON.stringify(data.user));
     window.location.href = '/dashboard';
   } catch (err) {
-    showError('Sunucuya bağlanılamadı.');
+    showError(t('err.serverDown'));
   }
 });
 
@@ -91,12 +89,12 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
   const passwordConfirm = document.getElementById('regPasswordConfirm').value;
 
   if (!username || !password || !passwordConfirm) {
-    showError('Tüm alanları doldurun.');
+    showError(t('err.fillAll'));
     return;
   }
 
   if (password !== passwordConfirm) {
-    showError('Şifreler eşleşmiyor.');
+    showError(t('err.passwordMismatch'));
     return;
   }
 
@@ -110,7 +108,7 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
     const data = await res.json();
 
     if (!res.ok) {
-      showError(data.error || 'Kayıt başarısız.');
+      showError(data.error || 'Registration failed.');
       return;
     }
 
@@ -118,6 +116,6 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
     localStorage.setItem('ff_user', JSON.stringify(data.user));
     window.location.href = '/dashboard';
   } catch (err) {
-    showError('Sunucuya bağlanılamadı.');
+    showError(t('err.serverDown'));
   }
 });

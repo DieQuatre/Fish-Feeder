@@ -120,21 +120,21 @@ function updateDeviceUI() {
   const lastSeenText = document.getElementById('lastSeenText');
 
   statusDot.className = `pulse-dot ${isOnline ? 'online' : 'offline'}`;
-  statusText.textContent = isOnline ? 'Çevrimiçi' : 'Çevrimdışı';
+  statusText.textContent = isOnline ? t('dash.status.online') : t('dash.status.offline');
   statusText.className = isOnline ? 'status-online' : 'status-offline';
 
   if (d.last_seen) {
     const lastSeen = new Date(d.last_seen + 'Z');
     const diff = Math.floor((Date.now() - lastSeen.getTime()) / 1000);
     if (diff < 60) {
-      lastSeenText.textContent = `${diff} saniye önce görüldü`;
+      lastSeenText.textContent = t('dash.status.seenSec', {n: diff});
     } else if (diff < 3600) {
-      lastSeenText.textContent = `${Math.floor(diff / 60)} dakika önce görüldü`;
+      lastSeenText.textContent = t('dash.status.seenMin', {n: Math.floor(diff / 60)});
     } else {
-      lastSeenText.textContent = `Son görülme: ${lastSeen.toLocaleString('tr-TR')}`;
+      lastSeenText.textContent = t('dash.status.seenAt', {t: lastSeen.toLocaleString()});
     }
   } else {
-    lastSeenText.textContent = 'Henüz bağlanmadı';
+    lastSeenText.textContent = t('dash.status.notConnected');
   }
 
   // Food level
@@ -146,7 +146,7 @@ function updateDeviceUI() {
   if (foodLevel < 0) {
     foodValue.textContent = '—%';
     foodBar.style.width = '0%';
-    foodText.textContent = 'Sensör verisi bekleniyor';
+    foodText.textContent = t('dash.food.waiting');
     foodBar.className = 'food-bar-fill';
   } else {
     foodValue.textContent = `%${foodLevel}`;
@@ -154,13 +154,13 @@ function updateDeviceUI() {
 
     if (foodLevel <= 20) {
       foodBar.className = 'food-bar-fill low';
-      foodText.textContent = '⚠️ Yem azaldı! Lütfen yem ekleyin.';
+      foodText.textContent = t('dash.food.low');
     } else if (foodLevel <= 50) {
       foodBar.className = 'food-bar-fill medium';
-      foodText.textContent = 'Yem seviyesi orta.';
+      foodText.textContent = t('dash.food.medium');
     } else {
       foodBar.className = 'food-bar-fill';
-      foodText.textContent = 'Yem seviyesi iyi.';
+      foodText.textContent = t('dash.food.good');
     }
   }
 }
@@ -180,9 +180,9 @@ async function loadFeedHistory() {
     tbody.innerHTML = '';
     emptyState.style.display = 'block';
     document.getElementById('feedCountToday').textContent = '0';
-    document.getElementById('feedCountSub').textContent = 'Bugün hiç besleme yapılmadı';
+    document.getElementById('feedCountSub').textContent = t('dash.feedCount.none');
     document.getElementById('lastFeedTime').textContent = '—';
-    document.getElementById('lastFeedSub').textContent = 'Henüz besleme yapılmadı';
+    document.getElementById('lastFeedSub').textContent = t('dash.lastFeed.none');
     return;
   }
 
@@ -193,28 +193,28 @@ async function loadFeedHistory() {
   const todayCount = logs.filter(l => new Date(l.fed_at + 'Z').toDateString() === today).length;
   document.getElementById('feedCountToday').textContent = todayCount;
   document.getElementById('feedCountSub').textContent = todayCount > 0
-    ? `Bugün ${todayCount} kez beslendi`
-    : 'Bugün hiç besleme yapılmadı';
+    ? t('dash.feedCount.count', {n: todayCount})
+    : t('dash.feedCount.none');
 
   // Last feed
   const lastFeed = new Date(logs[0].fed_at + 'Z');
-  document.getElementById('lastFeedTime').textContent = lastFeed.toLocaleString('tr-TR');
+  document.getElementById('lastFeedTime').textContent = lastFeed.toLocaleString();
 
   const diffMs = Date.now() - lastFeed.getTime();
   const diffMin = Math.floor(diffMs / 60000);
   if (diffMin < 60) {
-    document.getElementById('lastFeedSub').textContent = `${diffMin} dakika önce`;
+    document.getElementById('lastFeedSub').textContent = t('dash.lastFeed.minAgo', {n: diffMin});
   } else if (diffMin < 1440) {
-    document.getElementById('lastFeedSub').textContent = `${Math.floor(diffMin / 60)} saat önce`;
+    document.getElementById('lastFeedSub').textContent = t('dash.lastFeed.hoursAgo', {n: Math.floor(diffMin / 60)});
   } else {
-    document.getElementById('lastFeedSub').textContent = `${Math.floor(diffMin / 1440)} gün önce`;
+    document.getElementById('lastFeedSub').textContent = t('dash.lastFeed.daysAgo', {n: Math.floor(diffMin / 1440)});
   }
 
   // Build table
   tbody.innerHTML = logs.map(log => {
-    const date = new Date(log.fed_at + 'Z').toLocaleString('tr-TR');
+    const date = new Date(log.fed_at + 'Z').toLocaleString();
     const badgeClass = log.triggered_by === 'auto' ? 'badge-auto' : 'badge-manual';
-    const badgeText = log.triggered_by === 'auto' ? 'Otomatik' : 'Manuel';
+    const badgeText = log.triggered_by === 'auto' ? t('dash.history.auto') : t('dash.history.manual');
     return `
       <tr>
         <td>${date}</td>
@@ -230,19 +230,19 @@ async function sendFeedCommand() {
 
   const btn = document.getElementById('feedBtn');
   btn.classList.add('feeding');
-  btn.textContent = '⏳ Komut gönderiliyor...';
+  btn.textContent = t('dash.quickFeed.sending');
 
   const data = await apiPost(`/api/devices/${currentDevice.id}/feed`);
 
   setTimeout(() => {
     btn.classList.remove('feeding');
-    btn.textContent = '🐟 Şimdi Besle';
+    btn.textContent = t('dash.quickFeed.btn');
   }, 2000);
 
   if (data) {
-    showToast('Besleme komutu gönderildi!', 'success');
+    showToast(t('toast.feedSent'), 'success');
   } else {
-    showToast('Komut gönderilemedi.', 'error');
+    showToast(t('toast.feedFail'), 'error');
   }
 }
 
@@ -263,19 +263,19 @@ function toggleToken() {
 function copyToken() {
   if (!currentDevice) return;
   navigator.clipboard.writeText(currentDevice.device_token).then(() => {
-    showToast('Token panoya kopyalandı!', 'success');
+    showToast(t('toast.tokenCopied'), 'success');
   }).catch(() => {
-    showToast('Token kopyalanamadı.', 'error');
+    showToast(t('toast.tokenFail'), 'error');
   });
 }
 
 async function deleteDevice() {
   if (!currentDevice) return;
-  if (!confirm(`"${currentDevice.name}" cihazını silmek istediğinize emin misiniz?`)) return;
+  if (!confirm(t('confirm.delete', {name: currentDevice.name}))) return;
 
   const data = await apiDelete(`/api/devices/${currentDevice.id}`);
   if (data) {
-    showToast('Cihaz silindi.', 'success');
+    showToast(t('toast.deviceDeleted'), 'success');
     currentDevice = null;
     loadDevices();
   }
@@ -296,7 +296,7 @@ async function addDevice() {
 
   const data = await apiPost('/api/devices', { name });
   if (data) {
-    showToast(`"${name}" cihazı eklendi! Token: ${data.device.device_token}`, 'success');
+    showToast(t('toast.deviceAdded', {name}) + ` Token: ${data.device.device_token}`, 'success');
     closeAddDeviceModal();
     loadDevices();
   }
