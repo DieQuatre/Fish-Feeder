@@ -9,20 +9,55 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-// Toggle between login and register
-let isLogin = true;
+// State: 'login', 'register', 'forgot'
+let formState = 'login';
+
+function showForm(state) {
+  formState = state;
+  const loginForm = document.getElementById('loginForm');
+  const registerForm = document.getElementById('registerForm');
+  const forgotForm = document.getElementById('forgotForm');
+  const toggleLink = document.getElementById('toggleLink');
+  const forgotLink = document.getElementById('forgotLink');
+
+  loginForm.style.display = 'none';
+  registerForm.style.display = 'none';
+  forgotForm.style.display = 'none';
+  hideMessages();
+
+  if (state === 'login') {
+    loginForm.style.display = 'block';
+    forgotLink.style.display = 'inline';
+    toggleLink.innerHTML = `<span data-i18n="login.noAccount">${t('login.noAccount')}</span> <a href="#" id="toggleAuth" data-i18n="login.register">${t('login.register')}</a>`;
+  } else if (state === 'register') {
+    registerForm.style.display = 'block';
+    forgotLink.style.display = 'none';
+    toggleLink.innerHTML = `<span data-i18n="login.hasAccount">${t('login.hasAccount')}</span> <a href="#" id="toggleAuth" data-i18n="login.signin">${t('login.signin')}</a>`;
+  } else if (state === 'forgot') {
+    forgotForm.style.display = 'block';
+    forgotLink.style.display = 'none';
+    toggleLink.innerHTML = `<a href="#" id="toggleAuth" data-i18n="login.signin">${t('forgot.backToLogin')}</a>`;
+  }
+
+  // Re-attach toggle listener
+  document.getElementById('toggleAuth').addEventListener('click', (e) => {
+    e.preventDefault();
+    if (formState === 'login') showForm('register');
+    else showForm('login');
+  });
+}
+
+// Toggle auth
 document.getElementById('toggleAuth').addEventListener('click', (e) => {
   e.preventDefault();
-  isLogin = !isLogin;
+  if (formState === 'login') showForm('register');
+  else showForm('login');
+});
 
-  document.getElementById('loginForm').style.display = isLogin ? 'block' : 'none';
-  document.getElementById('registerForm').style.display = isLogin ? 'none' : 'block';
-  document.getElementById('toggleLink').innerHTML = isLogin
-    ? `<span data-i18n="login.noAccount">${t('login.noAccount')}</span> <a href="#" id="toggleAuth" data-i18n="login.register">${t('login.register')}</a>`
-    : `<span data-i18n="login.hasAccount">${t('login.hasAccount')}</span> <a href="#" id="toggleAuth" data-i18n="login.signin">${t('login.signin')}</a>`;
-
-  document.getElementById('toggleAuth').addEventListener('click', arguments.callee.bind(null, e));
-  hideMessages();
+// Forgot password link
+document.getElementById('forgotLink').addEventListener('click', (e) => {
+  e.preventDefault();
+  showForm('forgot');
 });
 
 function showError(msg) {
@@ -63,7 +98,6 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password })
     });
-
     const data = await res.json();
 
     if (!res.ok) {
@@ -85,14 +119,14 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
   hideMessages();
 
   const username = document.getElementById('regUsername').value.trim();
+  const email = document.getElementById('regEmail').value.trim();
   const password = document.getElementById('regPassword').value;
   const passwordConfirm = document.getElementById('regPasswordConfirm').value;
 
-  if (!username || !password || !passwordConfirm) {
+  if (!username || !email || !password || !passwordConfirm) {
     showError(t('err.fillAll'));
     return;
   }
-
   if (password !== passwordConfirm) {
     showError(t('err.passwordMismatch'));
     return;
@@ -102,9 +136,8 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
     const res = await fetch(`${API_BASE}/api/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password })
+      body: JSON.stringify({ username, email, password })
     });
-
     const data = await res.json();
 
     if (!res.ok) {
@@ -117,5 +150,45 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
     window.location.href = '/dashboard';
   } catch (err) {
     showError(t('err.serverDown'));
+  }
+});
+
+// Forgot Password
+document.getElementById('forgotForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  hideMessages();
+
+  const email = document.getElementById('forgotEmail').value.trim();
+  if (!email) {
+    showError(t('err.emailRequired'));
+    return;
+  }
+
+  const btn = document.getElementById('forgotBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳...';
+
+  try {
+    const res = await fetch(`${API_BASE}/api/auth/forgot-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      showError(data.error || 'Failed.');
+      btn.disabled = false;
+      btn.textContent = t('forgot.btn');
+      return;
+    }
+
+    showSuccess(t('forgot.success'));
+    btn.disabled = false;
+    btn.textContent = t('forgot.btn');
+  } catch (err) {
+    showError(t('err.serverDown'));
+    btn.disabled = false;
+    btn.textContent = t('forgot.btn');
   }
 });

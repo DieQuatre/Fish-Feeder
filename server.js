@@ -19,6 +19,10 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api/devices', require('./routes/devices'));
 app.use('/api/esp', require('./routes/esp'));
 
+app.get('/reset-password', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'reset-password.html'));
+});
+
 app.get('/guide', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'guide.html'));
 });

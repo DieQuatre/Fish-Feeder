@@ -14,9 +14,18 @@ async function initDB() {
       CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
         username TEXT UNIQUE NOT NULL,
+        email TEXT UNIQUE NOT NULL,
         password_hash TEXT NOT NULL,
         created_at TIMESTAMP DEFAULT NOW()
       )
+    `);
+
+    // Add email column if it doesn't exist (for existing databases)
+    await client.query(`
+      DO $$ BEGIN
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS email TEXT UNIQUE;
+      EXCEPTION WHEN OTHERS THEN NULL;
+      END $$;
     `);
 
     await client.query(`
@@ -24,7 +33,7 @@ async function initDB() {
         id SERIAL PRIMARY KEY,
         user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         device_token TEXT UNIQUE NOT NULL,
-        name TEXT NOT NULL DEFAULT 'Balık Yemleyici',
+        name TEXT NOT NULL DEFAULT 'Fish Feeder',
         is_online BOOLEAN DEFAULT FALSE,
         last_seen TIMESTAMP,
         food_level_percent INTEGER DEFAULT -1,
@@ -42,7 +51,18 @@ async function initDB() {
       )
     `);
 
-    console.log('✅ PostgreSQL tabloları hazır.');
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS password_resets (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        token TEXT UNIQUE NOT NULL,
+        expires_at TIMESTAMP NOT NULL,
+        used BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+
+    console.log('✅ PostgreSQL tables ready.');
   } finally {
     client.release();
   }
