@@ -125,7 +125,10 @@
           </p>
           <div class="token-box">
             <code id="deviceToken">—</code>
-            <button class="btn-copy" onclick="copyToken()">📋 Kopyala</button>
+            <div style="display:flex; gap:8px;">
+              <button class="btn-copy" id="toggleTokenBtn" onclick="toggleToken()">👁️</button>
+              <button class="btn-copy" onclick="copyToken()">📋 Kopyala</button>
+            </div>
           </div>
         </div>
 

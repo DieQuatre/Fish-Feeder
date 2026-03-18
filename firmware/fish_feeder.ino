@@ -5,7 +5,6 @@
  * ===========================================
  *
  * Gerekli Kütüphaneler (Arduino Library Manager'dan yükle):
- *   - WiFiManager by tzapu
  *   - ArduinoJson by Benoit Blanchon
  *   - Servo (dahili)
  *   - ESP8266WiFi (dahili)
@@ -20,114 +19,81 @@
  *   - Servo VCC    -> 5V (harici güç önerilir)
  *   - Servo GND    -> GND
  *
- * İLK KURULUM:
- *   1. Kodu ESP8266'ya yükleyin
- *   2. ESP "BalikYemleyici-Kurulum" adında bir WiFi ağı oluşturur
- *   3. Telefonunuzdan bu ağa bağlanın
- *   4. Açılan sayfada WiFi bilgilerinizi ve Device Token'ı girin
- *   5. Kaydet'e basın — ESP bağlanır ve çalışmaya başlar
- *   6. Bir daha kurulum gerekmez (bilgiler hafızada kalır)
- *
- *   Sıfırlamak isterseniz: ESP açılırken 5 saniye FLASH butonuna basın
+ * KURULUM:
+ *   1. Aşağıdaki 3 bilgiyi doldurun:
+ *      - WIFI_SSID: WiFi adınız
+ *      - WIFI_PASSWORD: WiFi şifreniz
+ *      - DEVICE_TOKEN: Dashboard'dan kopyaladığınız cihaz tokeni
+ *   2. Kodu ESP8266'ya yükleyin
+ *   3. Bitti! ESP otomatik bağlanıp çalışmaya başlar
  */
 
 #include <ESP8266WiFi.h>
 #include <ESP8266HTTPClient.h>
 #include <WiFiClientSecure.h>
-#include <WiFiManager.h>
 #include <ArduinoJson.h>
 #include <Servo.h>
-#include <EEPROM.h>
 
-// ==================== SUNUCU ADRESI ====================
-// Render'a deploy ettikten sonra buraya Render URL'nizi yazın
-// Örnek: "https://fish-feeder-xxxx.onrender.com"
+// ==================== BURAYA DOLDURUN ====================
+const char* WIFI_SSID     = "WIFI_ADINIZ";
+const char* WIFI_PASSWORD  = "WIFI_SIFRENIZ";
+const char* DEVICE_TOKEN   = "DEV-DASHBOARD_TOKENI";
+// =========================================================
+
+// Sunucu adresi (Render URL'niz)
 const char* SERVER_URL = "https://RENDER_ADRESINIZ.onrender.com";
 
-// ==================== PIN TANIMLARI ====================
-#define TRIG_PIN    D1   // HC-SR04 Trigger
-#define ECHO_PIN    D2   // HC-SR04 Echo
-#define SERVO_PIN   D3   // Servo motor
-#define RESET_PIN   D5   // Sıfırlama butonu (opsiyonel, GND'ye bağlayın)
+// Pin tanımları
+#define TRIG_PIN    D1
+#define ECHO_PIN    D2
+#define SERVO_PIN   D3
 
-// ==================== MESAFE SENSÖRÜ AYARLARI ====================
-#define CONTAINER_EMPTY_DISTANCE 20  // Kap boşken mesafe (cm)
-#define CONTAINER_FULL_DISTANCE  3   // Kap doluyken mesafe (cm)
+// Mesafe sensörü ayarları (cm)
+#define CONTAINER_EMPTY_DISTANCE 20
+#define CONTAINER_FULL_DISTANCE  3
 
-// ==================== SERVO AYARLARI ====================
+// Servo ayarları
 #define SERVO_CLOSE_ANGLE  0
 #define SERVO_OPEN_ANGLE   90
-#define FEED_DURATION      1500  // ms
+#define FEED_DURATION      1500
 
-// ==================== ZAMANLAMA ====================
-#define HEARTBEAT_INTERVAL     10000  // 10 saniye
-#define COMMAND_CHECK_INTERVAL 5000   // 5 saniye
+// Zamanlama (ms)
+#define HEARTBEAT_INTERVAL     10000
+#define COMMAND_CHECK_INTERVAL 5000
 
-// ==================== EEPROM ====================
-#define EEPROM_SIZE       128
-#define EEPROM_TOKEN_ADDR 0
-#define TOKEN_MAX_LEN     64
-#define EEPROM_MAGIC      0xAB  // Token kaydedildi işareti
-
-// ==================== GLOBAL ====================
+// Global
 Servo feederServo;
 WiFiClientSecure wifiClient;
-WiFiManager wifiManager;
-
-char deviceToken[TOKEN_MAX_LEN] = "";
 unsigned long lastHeartbeat = 0;
 unsigned long lastCommandCheck = 0;
 
-// WiFiManager custom parameter
-WiFiManagerParameter customTokenParam("token", "Device Token (Dashboard'dan kopyalayın)", "", TOKEN_MAX_LEN - 1);
+// ==================== WiFi ====================
+void connectWiFi() {
+  Serial.print("WiFi'ye baglaniliyor: ");
+  Serial.println(WIFI_SSID);
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
 
-// ==================== EEPROM FONKSİYONLARI ====================
-
-void saveTokenToEEPROM(const char* token) {
-  EEPROM.begin(EEPROM_SIZE);
-  EEPROM.write(EEPROM_TOKEN_ADDR, EEPROM_MAGIC);
-  for (int i = 0; i < TOKEN_MAX_LEN - 1; i++) {
-    EEPROM.write(EEPROM_TOKEN_ADDR + 1 + i, token[i]);
-    if (token[i] == '\0') break;
+  int attempts = 0;
+  while (WiFi.status() != WL_CONNECTED && attempts < 30) {
+    delay(500);
+    Serial.print(".");
+    attempts++;
   }
-  EEPROM.commit();
-  EEPROM.end();
-  Serial.println("✅ Token EEPROM'a kaydedildi.");
+
+  if (WiFi.status() == WL_CONNECTED) {
+    Serial.println();
+    Serial.print("Baglandi! IP: ");
+    Serial.println(WiFi.localIP());
+  } else {
+    Serial.println("\nWiFi baglantisi basarisiz! Yeniden deneniyor...");
+    delay(5000);
+    ESP.restart();
+  }
 }
 
-bool loadTokenFromEEPROM() {
-  EEPROM.begin(EEPROM_SIZE);
-  if (EEPROM.read(EEPROM_TOKEN_ADDR) != EEPROM_MAGIC) {
-    EEPROM.end();
-    return false;
-  }
-  for (int i = 0; i < TOKEN_MAX_LEN - 1; i++) {
-    deviceToken[i] = EEPROM.read(EEPROM_TOKEN_ADDR + 1 + i);
-    if (deviceToken[i] == '\0') break;
-  }
-  deviceToken[TOKEN_MAX_LEN - 1] = '\0';
-  EEPROM.end();
-
-  if (strlen(deviceToken) < 5) return false;
-
-  Serial.print("📦 EEPROM'dan token yüklendi: ");
-  Serial.println(deviceToken);
-  return true;
-}
-
-void clearEEPROM() {
-  EEPROM.begin(EEPROM_SIZE);
-  for (int i = 0; i < EEPROM_SIZE; i++) {
-    EEPROM.write(i, 0);
-  }
-  EEPROM.commit();
-  EEPROM.end();
-  Serial.println("🗑️ EEPROM temizlendi.");
-}
-
-// ==================== SENSÖR + SERVO ====================
-
-float measureDistance() {
+// ==================== Sensör ====================
+int calculateFoodLevel() {
   digitalWrite(TRIG_PIN, LOW);
   delayMicroseconds(2);
   digitalWrite(TRIG_PIN, HIGH);
@@ -136,214 +102,92 @@ float measureDistance() {
 
   long duration = pulseIn(ECHO_PIN, HIGH, 30000);
   if (duration == 0) return -1;
-  return duration * 0.034 / 2.0;
-}
 
-int calculateFoodLevel() {
-  float distance = measureDistance();
-  if (distance < 0) {
-    Serial.println("Mesafe ölçüm hatası!");
-    return -1;
-  }
-  Serial.print("Mesafe: ");
-  Serial.print(distance);
-  Serial.println(" cm");
-
+  float distance = duration * 0.034 / 2.0;
   float range = CONTAINER_EMPTY_DISTANCE - CONTAINER_FULL_DISTANCE;
   float level = (CONTAINER_EMPTY_DISTANCE - distance) / range * 100.0;
-  int percent = constrain((int)level, 0, 100);
-
-  Serial.print("Yem seviyesi: %");
-  Serial.println(percent);
-  return percent;
+  return constrain((int)level, 0, 100);
 }
 
+// ==================== Servo ====================
 void dispenseFeed() {
-  Serial.println("🐟 Yem veriliyor...");
+  Serial.println("Yem veriliyor...");
   feederServo.attach(SERVO_PIN);
   feederServo.write(SERVO_OPEN_ANGLE);
   delay(FEED_DURATION);
   feederServo.write(SERVO_CLOSE_ANGLE);
   delay(500);
   feederServo.detach();
-  Serial.println("✅ Yem verildi!");
+  Serial.println("Yem verildi!");
 }
 
-// ==================== HTTP FONKSİYONLARI ====================
-
+// ==================== HTTP ====================
 void sendHeartbeat() {
-  if (WiFi.status() != WL_CONNECTED || strlen(deviceToken) < 5) return;
+  if (WiFi.status() != WL_CONNECTED) return;
 
   int foodLevel = calculateFoodLevel();
-
   HTTPClient http;
-  String url = String(SERVER_URL) + "/api/esp/heartbeat";
-  http.begin(wifiClient, url);
+  http.begin(wifiClient, String(SERVER_URL) + "/api/esp/heartbeat");
   http.addHeader("Content-Type", "application/json");
-  http.addHeader("X-Device-Token", deviceToken);
+  http.addHeader("X-Device-Token", DEVICE_TOKEN);
 
   StaticJsonDocument<128> doc;
-  doc["device_token"] = deviceToken;
+  doc["device_token"] = DEVICE_TOKEN;
   if (foodLevel >= 0) doc["food_level_percent"] = foodLevel;
 
   String body;
   serializeJson(doc, body);
-  int httpCode = http.POST(body);
-
-  if (httpCode == 200) {
-    Serial.println("💚 Heartbeat gönderildi.");
-  } else {
-    Serial.print("❌ Heartbeat hatası: ");
-    Serial.println(httpCode);
-  }
+  int code = http.POST(body);
+  Serial.println(code == 200 ? "Heartbeat OK" : "Heartbeat HATA");
   http.end();
 }
 
 void checkCommands() {
-  if (WiFi.status() != WL_CONNECTED || strlen(deviceToken) < 5) return;
+  if (WiFi.status() != WL_CONNECTED) return;
 
   HTTPClient http;
-  String url = String(SERVER_URL) + "/api/esp/commands";
-  http.begin(wifiClient, url);
-  http.addHeader("X-Device-Token", deviceToken);
+  http.begin(wifiClient, String(SERVER_URL) + "/api/esp/commands");
+  http.addHeader("X-Device-Token", DEVICE_TOKEN);
 
-  int httpCode = http.GET();
-  if (httpCode == 200) {
-    String payload = http.getString();
+  if (http.GET() == 200) {
     StaticJsonDocument<256> doc;
-    deserializeJson(doc, payload);
-
-    JsonArray commands = doc["commands"];
-    for (JsonObject cmd : commands) {
-      String action = cmd["action"].as<String>();
-      if (action == "feed") {
-        Serial.println("📥 Besleme komutu alındı!");
+    deserializeJson(doc, http.getString());
+    for (JsonObject cmd : doc["commands"].as<JsonArray>()) {
+      if (cmd["action"].as<String>() == "feed") {
         dispenseFeed();
-        notifyFeedDone("manual");
+        // Besleme bildirimi
+        HTTPClient http2;
+        http2.begin(wifiClient, String(SERVER_URL) + "/api/esp/feed-done");
+        http2.addHeader("Content-Type", "application/json");
+        http2.addHeader("X-Device-Token", DEVICE_TOKEN);
+        http2.POST("{\"device_token\":\"" + String(DEVICE_TOKEN) + "\",\"triggered_by\":\"manual\"}");
+        http2.end();
       }
     }
   }
   http.end();
 }
 
-void notifyFeedDone(const char* triggeredBy) {
-  if (WiFi.status() != WL_CONNECTED) return;
-
-  HTTPClient http;
-  String url = String(SERVER_URL) + "/api/esp/feed-done";
-  http.begin(wifiClient, url);
-  http.addHeader("Content-Type", "application/json");
-  http.addHeader("X-Device-Token", deviceToken);
-
-  StaticJsonDocument<128> doc;
-  doc["device_token"] = deviceToken;
-  doc["triggered_by"] = triggeredBy;
-
-  String body;
-  serializeJson(doc, body);
-  http.POST(body);
-  http.end();
-
-  Serial.println("✅ Besleme kaydı sunucuya bildirildi.");
-}
-
-// ==================== WiFiManager CALLBACK ====================
-
-void saveConfigCallback() {
-  // WiFiManager'dan parametre al
-  String token = String(customTokenParam.getValue());
-  token.trim();
-
-  if (token.length() > 4) {
-    token.toCharArray(deviceToken, TOKEN_MAX_LEN);
-    saveTokenToEEPROM(deviceToken);
-    Serial.print("✅ Device Token ayarlandı: ");
-    Serial.println(deviceToken);
-  } else {
-    Serial.println("⚠️ Token çok kısa, kaydedilmedi.");
-  }
-}
-
-// ==================== SETUP ====================
+// ==================== Setup & Loop ====================
 void setup() {
   Serial.begin(115200);
-  Serial.println();
-  Serial.println("=================================");
-  Serial.println("  🐟 Fish Feeder System v2.0");
-  Serial.println("  WiFiManager Kurulum Destekli");
-  Serial.println("=================================");
+  Serial.println("\n=== Fish Feeder v2.0 ===");
 
-  // Pin modları
   pinMode(TRIG_PIN, OUTPUT);
   pinMode(ECHO_PIN, INPUT);
-  pinMode(RESET_PIN, INPUT_PULLUP);
 
-  // HTTPS ayarı (sertifika doğrulamasını atla)
   wifiClient.setInsecure();
 
-  // Servo başlangıç
   feederServo.attach(SERVO_PIN);
   feederServo.write(SERVO_CLOSE_ANGLE);
   delay(500);
   feederServo.detach();
 
-  // EEPROM'dan token yükle
-  bool tokenLoaded = loadTokenFromEEPROM();
-
-  // Sıfırlama kontrolü: RESET_PIN 3 saniye basılı tutulursa
-  Serial.println("Sıfırlama kontrolü (3 saniye RESET pinine basın)...");
-  unsigned long resetStart = millis();
-  bool resetRequested = false;
-  while (millis() - resetStart < 3000) {
-    if (digitalRead(RESET_PIN) == LOW) {
-      resetRequested = true;
-    }
-    delay(100);
-  }
-
-  if (resetRequested) {
-    Serial.println("🔄 SIFIRLAMA başlatıldı!");
-    clearEEPROM();
-    wifiManager.resetSettings();
-    tokenLoaded = false;
-  }
-
-  // WiFiManager ayarları
-  wifiManager.addParameter(&customTokenParam);
-  wifiManager.setSaveConfigCallback(saveConfigCallback);
-  wifiManager.setConfigPortalTimeout(300); // 5 dakika timeout
-
-  // Eğer token yoksa veya WiFi bağlantısı yoksa → kurulum portalı aç
-  if (!tokenLoaded) {
-    Serial.println("📡 Kurulum portalı açılıyor...");
-    Serial.println("Telefonunuzdan 'BalikYemleyici-Kurulum' ağına bağlanın.");
-
-    if (!wifiManager.startConfigPortal("BalikYemleyici-Kurulum")) {
-      Serial.println("Bağlantı başarısız, yeniden başlatılıyor...");
-      delay(3000);
-      ESP.restart();
-    }
-  } else {
-    // Token var, sadece WiFi'ye bağlan (kaydedilmiş bilgilerle)
-    Serial.println("📶 Kayıtlı WiFi'ye bağlanılıyor...");
-    if (!wifiManager.autoConnect("BalikYemleyici-Kurulum")) {
-      Serial.println("WiFi bağlantısı başarısız, yeniden başlatılıyor...");
-      delay(3000);
-      ESP.restart();
-    }
-  }
-
-  Serial.print("✅ WiFi bağlandı! IP: ");
-  Serial.println(WiFi.localIP());
-  Serial.print("🔑 Device Token: ");
-  Serial.println(deviceToken);
-
-  // İlk heartbeat
+  connectWiFi();
   sendHeartbeat();
-  Serial.println("✅ Sistem hazır!");
+  Serial.println("Sistem hazir!");
 }
 
-// ==================== LOOP ====================
 void loop() {
   unsigned long now = millis();
 
@@ -351,18 +195,12 @@ void loop() {
     lastHeartbeat = now;
     sendHeartbeat();
   }
-
   if (now - lastCommandCheck >= COMMAND_CHECK_INTERVAL) {
     lastCommandCheck = now;
     checkCommands();
   }
-
-  // WiFi kopmuşsa yeniden bağlan
   if (WiFi.status() != WL_CONNECTED) {
-    Serial.println("⚠️ WiFi koptu! Yeniden bağlanılıyor...");
-    WiFi.reconnect();
-    delay(5000);
+    connectWiFi();
   }
-
   delay(100);
 }

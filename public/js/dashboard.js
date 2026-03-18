@@ -1,6 +1,7 @@
 const API_BASE = window.location.origin;
 let currentDevice = null;
 let pollInterval = null;
+let tokenVisible = false;
 
 // ==================== AUTH CHECK ====================
 const token = localStorage.getItem('ff_token');
@@ -105,8 +106,12 @@ function updateDeviceUI() {
   // Device name
   document.getElementById('deviceName').textContent = d.name;
 
-  // Token
-  document.getElementById('deviceToken').textContent = d.device_token;
+  // Token (gizli başla)
+  if (!tokenVisible) {
+    document.getElementById('deviceToken').textContent = '•'.repeat(d.device_token.length);
+  } else {
+    document.getElementById('deviceToken').textContent = d.device_token;
+  }
 
   // Online status
   const isOnline = d.is_online === true || d.is_online === 1;
@@ -241,18 +246,26 @@ async function sendFeedCommand() {
   }
 }
 
+function toggleToken() {
+  if (!currentDevice) return;
+  tokenVisible = !tokenVisible;
+  const el = document.getElementById('deviceToken');
+  const btn = document.getElementById('toggleTokenBtn');
+  if (tokenVisible) {
+    el.textContent = currentDevice.device_token;
+    btn.textContent = '🙈';
+  } else {
+    el.textContent = '•'.repeat(currentDevice.device_token.length);
+    btn.textContent = '👁️';
+  }
+}
+
 function copyToken() {
   if (!currentDevice) return;
   navigator.clipboard.writeText(currentDevice.device_token).then(() => {
     showToast('Token panoya kopyalandı!', 'success');
   }).catch(() => {
-    // Fallback
-    const el = document.getElementById('deviceToken');
-    const range = document.createRange();
-    range.selectNodeContents(el);
-    window.getSelection().removeAllRanges();
-    window.getSelection().addRange(range);
-    showToast('Token seçildi, Ctrl+C ile kopyalayın.', 'info');
+    showToast('Token kopyalanamadı.', 'error');
   });
 }
 
