@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="ESP8266 Otomatik Balık Yemleyici - Kurulum Rehberi">
+  <title>Fish Feeder — Kurulum Rehberi</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🐟</text></svg>">
+  <style>
+    .guide-container {
+      position: relative;
+      z-index: 1;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 32px 24px 60px;
+    }
+    .guide-header {
+      text-align: center;
+      margin-bottom: 40px;
+      animation: slideUp 0.6s ease-out;
+    }
+    .guide-header .icon { font-size: 56px; display: block; margin-bottom: 12px; }
+    .guide-header h1 {
+      font-size: 2rem;
+      font-weight: 800;
+      background: var(--gradient-primary);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .guide-header p {
+      color: var(--text-secondary);
+      margin-top: 8px;
+      font-size: 1rem;
+    }
+    .guide-nav {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 36px;
+      flex-wrap: wrap;
+    }
+    .guide-nav a {
+      background: var(--bg-glass);
+      border: 1px solid var(--border-glass);
+      border-radius: var(--radius-full);
+      padding: 8px 20px;
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 0.88rem;
+      font-weight: 500;
+      transition: all 0.3s;
+    }
+    .guide-nav a:hover {
+      border-color: var(--accent-blue);
+      color: var(--accent-blue);
+      background: rgba(59,130,246,0.1);
+    }
+    .step {
+      background: var(--bg-glass);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border-glass);
+      border-radius: var(--radius);
+      padding: 28px;
+      margin-bottom: 24px;
+      position: relative;
+      animation: slideUp 0.6s ease-out;
+    }
+    .step-number {
+      position: absolute;
+      top: -14px;
+      left: 24px;
+      background: var(--gradient-primary);
+      color: white;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 0.9rem;
+      box-shadow: 0 4px 16px var(--accent-blue-glow);
+    }
+    .step h2 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .step p, .step li {
+      color: var(--text-secondary);
+      font-size: 0.92rem;
+      line-height: 1.7;
+    }
+    .step ul, .step ol {
+      padding-left: 20px;
+      margin-top: 8px;
+    }
+    .step li { margin-bottom: 8px; }
+    .step code {
+      background: rgba(59,130,246,0.12);
+      color: var(--accent-blue);
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-family: 'Courier New', monospace;
+      font-size: 0.88rem;
+    }
+    .code-block {
+      background: rgba(0,0,0,0.4);
+      border: 1px solid var(--border-glass);
+      border-radius: var(--radius-sm);
+      padding: 16px 20px;
+      margin: 12px 0;
+      overflow-x: auto;
+      font-family: 'Courier New', monospace;
+      font-size: 0.88rem;
+      color: var(--accent-green);
+      line-height: 1.6;
+    }
+    .code-block .comment { color: var(--text-muted); }
+    .code-block .highlight { color: #f59e0b; font-weight: 600; }
+    .warning-box {
+      background: rgba(245,158,11,0.1);
+      border: 1px solid rgba(245,158,11,0.3);
+      border-radius: var(--radius-sm);
+      padding: 14px 18px;
+      margin-top: 12px;
+      color: var(--accent-orange);
+      font-size: 0.88rem;
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+    }
+    .info-box {
+      background: rgba(59,130,246,0.1);
+      border: 1px solid rgba(59,130,246,0.3);
+      border-radius: var(--radius-sm);
+      padding: 14px 18px;
+      margin-top: 12px;
+      color: var(--accent-blue);
+      font-size: 0.88rem;
+    }
+    .parts-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 12px;
+    }
+    .part-item {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border-glass);
+      border-radius: var(--radius-sm);
+      padding: 14px;
+      text-align: center;
+    }
+    .part-item .part-icon { font-size: 28px; display: block; margin-bottom: 6px; }
+    .part-item .part-name { font-size: 0.88rem; color: var(--text-primary); font-weight: 600; }
+    .part-item .part-desc { font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; }
+    .pin-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+    }
+    .pin-table th, .pin-table td {
+      padding: 10px 14px;
+      text-align: left;
+      border-bottom: 1px solid var(--border-glass);
+      font-size: 0.88rem;
+    }
+    .pin-table th {
+      color: var(--text-muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 0.78rem;
+    }
+    .pin-table td { color: var(--text-secondary); }
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--accent-blue);
+      text-decoration: none;
+      font-size: 0.92rem;
+      font-weight: 500;
+      margin-bottom: 24px;
+      transition: color 0.2s;
+    }
+    .back-link:hover { color: #60a5fa; }
+    @media (max-width: 768px) {
+      .guide-header h1 { font-size: 1.5rem; }
+      .parts-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-effects">
+    <div class="bg-orb bg-orb-1"></div>
+    <div class="bg-orb bg-orb-2"></div>
+    <div class="bg-orb bg-orb-3"></div>
+  </div>
+
+  <div class="guide-container">
+    <a href="/" class="back-link">← Ana Sayfa</a>
+
+    <div class="guide-header">
+      <span class="icon">🐟</span>
+      <h1>Kurulum Rehberi</h1>
+      <p>Otomatik balık yemleyici sisteminizi adım adım kurun</p>
+    </div>
+
+    <nav class="guide-nav">
+      <a href="#malzemeler">🔧 Malzemeler</a>
+      <a href="#devre">⚡ Devre</a>
+      <a href="#hesap">👤 Hesap</a>
+      <a href="#arduino">💻 Arduino</a>
+      <a href="#kullanim">🎯 Kullanım</a>
+    </nav>
+
+    <!-- STEP 1: Materials -->
+    <div class="step" id="malzemeler">
+      <div class="step-number">1</div>
+      <h2>🔧 Gerekli Malzemeler</h2>
+      <p>Sistemi kurmak için aşağıdaki parçalara ihtiyacınız var:</p>
+      <div class="parts-grid">
+        <div class="part-item">
+          <span class="part-icon">📡</span>
+          <div class="part-name">ESP8266 (NodeMCU)</div>
+          <div class="part-desc">WiFi özellikli mikrodenetleyici</div>
+        </div>
+        <div class="part-item">
+          <span class="part-icon">⚙️</span>
+          <div class="part-name">SG90 Servo Motor</div>
+          <div class="part-desc">Yem kapağını açıp kapatır</div>
+        </div>
+        <div class="part-item">
+          <span class="part-icon">📏</span>
+          <div class="part-name">HC-SR04 Mesafe Sensörü</div>
+          <div class="part-desc">Yem seviyesini ölçer</div>
+        </div>
+        <div class="part-item">
+          <span class="part-icon">🔌</span>
+          <div class="part-name">Jumper Kablolar</div>
+          <div class="part-desc">Bağlantı kabloları</div>
+        </div>
+      </div>
+      <div class="info-box">
+        ℹ️ Servo motor için harici 5V güç kaynağı kullanmanız önerilir. ESP8266'nın USB portundaki güç servo için yetersiz kalabilir.
+      </div>
+    </div>
+
+    <!-- STEP 2: Wiring -->
+    <div class="step" id="devre">
+      <div class="step-number">2</div>
+      <h2>⚡ Devre Bağlantıları</h2>
+      <p>Aşağıdaki tabloya göre bağlantıları yapın:</p>
+      <table class="pin-table">
+        <thead>
+          <tr><th>Parça</th><th>Pin</th><th>ESP8266 Pin</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>HC-SR04 Trig</td><td>Trig</td><td><code>D1</code></td></tr>
+          <tr><td>HC-SR04 Echo</td><td>Echo</td><td><code>D2</code></td></tr>
+          <tr><td>HC-SR04 VCC</td><td>VCC</td><td><code>5V</code></td></tr>
+          <tr><td>HC-SR04 GND</td><td>GND</td><td><code>GND</code></td></tr>
+          <tr><td>Servo Motor</td><td>Signal (Turuncu)</td><td><code>D3</code></td></tr>
+          <tr><td>Servo Motor</td><td>VCC (Kırmızı)</td><td><code>5V</code></td></tr>
+          <tr><td>Servo Motor</td><td>GND (Kahverengi)</td><td><code>GND</code></td></tr>
+        </tbody>
+      </table>
+      <div class="warning-box">
+        ⚠️ Bağlantıları yaparken ESP8266'nın fişini çekin. Kısa devre olmamasına dikkat edin.
+      </div>
+    </div>
+
+    <!-- STEP 3: Account -->
+    <div class="step" id="hesap">
+      <div class="step-number">3</div>
+      <h2>👤 Hesap Oluşturma & Cihaz Ekleme</h2>
+      <ol>
+        <li><a href="/" style="color:var(--accent-blue)">Ana sayfaya</a> gidip <strong>Kayıt Ol</strong>'a tıklayın</li>
+        <li>Kullanıcı adı (en az 3 karakter) ve şifre (en az 6 karakter) belirleyin</li>
+        <li>Giriş yaptıktan sonra <strong>➕ Cihaz Ekle</strong> butonuna tıklayın</li>
+        <li>Cihazınıza bir isim verin (örn: "Salon Akvaryumu")</li>
+        <li>Sistem size bir <strong>Device Token</strong> verecek — bunu kopyalayın!</li>
+      </ol>
+      <div class="info-box">
+        ℹ️ Token'ı görmek için göz simgesine 👁️ tıklayın, kopyalamak için 📋 butonuna basın.
+      </div>
+    </div>
+
+    <!-- STEP 4: Arduino -->
+    <div class="step" id="arduino">
+      <div class="step-number">4</div>
+      <h2>💻 Arduino Kodunu Yükleme</h2>
+      <p>Arduino IDE'yi açın ve aşağıdaki adımları takip edin:</p>
+      <ol>
+        <li><strong>Arduino IDE</strong>'yi indirin: <a href="https://www.arduino.cc/en/software" style="color:var(--accent-blue)" target="_blank">arduino.cc</a></li>
+        <li><strong>Board Manager</strong>'dan ESP8266 desteğini ekleyin:
+          <div class="code-block">
+            <span class="comment">// File → Preferences → Additional Board Manager URLs:</span><br>
+            http://arduino.esp8266.com/stable/package_esp8266com_index.json
+          </div>
+        </li>
+        <li><strong>Library Manager</strong>'dan şu kütüphaneyi yükleyin:
+          <div class="code-block">ArduinoJson <span class="comment">by Benoit Blanchon</span></div>
+        </li>
+        <li><code>firmware/fish_feeder.ino</code> dosyasını açın</li>
+        <li>Aşağıdaki <strong>3 satırı</strong> kendi bilgilerinizle doldurun:</li>
+      </ol>
+      <div class="code-block">
+        <span class="comment">// WiFi bilgileriniz</span><br>
+        const char* WIFI_SSID &nbsp;&nbsp;&nbsp;&nbsp;= "<span class="highlight">WIFI_ADINIZ</span>";<br>
+        const char* WIFI_PASSWORD = "<span class="highlight">WIFI_SIFRENIZ</span>";<br><br>
+        <span class="comment">// Dashboard'dan kopyaladığınız token</span><br>
+        const char* DEVICE_TOKEN &nbsp;= "<span class="highlight">DEV-XXXXXXXXXXXXXXXX</span>";
+      </div>
+      <ol start="6">
+        <li><strong>SERVER_URL</strong> satırını Render adresinizle güncelleyin</li>
+        <li>Board: <code>NodeMCU 1.0 (ESP-12E Module)</code> seçin</li>
+        <li>Portu seçip <strong>Upload</strong> butonuna basın</li>
+      </ol>
+      <div class="warning-box">
+        ⚠️ Yükleme sırasında ESP8266'nın USB kablosuyla bilgisayara bağlı olduğundan emin olun.
+      </div>
+    </div>
+
+    <!-- STEP 5: Usage -->
+    <div class="step" id="kullanim">
+      <div class="step-number">5</div>
+      <h2>🎯 Dashboard Kullanımı</h2>
+      <p>Her şey hazır! Dashboard'da şunları yapabilirsiniz:</p>
+      <ul>
+        <li>🟢 <strong>Cihaz Durumu:</strong> ESP'nin çevrimiçi olup olmadığını görün</li>
+        <li>📊 <strong>Yem Seviyesi:</strong> Kapta ne kadar yem kaldığını yüzdeleri olarak takip edin</li>
+        <li>🐟 <strong>Şimdi Besle:</strong> Butona basarak uzaktan yem verin</li>
+        <li>📜 <strong>Besleme Geçmişi:</strong> Ne zaman, nasıl yem verildiğini görün</li>
+        <li>🕐 <strong>Son Besleme:</strong> En son yem verme zamanını kontrol edin</li>
+      </ul>
+      <div class="info-box">
+        ℹ️ Dashboard her 5 saniyede bir güncellenir. Cihaz 30 saniye boyunca sinyal göndermezse "Çevrimdışı" olarak gösterilir.
+      </div>
+    </div>
+
+    <!-- FAQ -->
+    <div class="step">
+      <div class="step-number">?</div>
+      <h2>❓ Sık Sorulan Sorular</h2>
+      <ul>
+        <li><strong>Yem seviyesi sensörü nasıl çalışıyor?</strong><br>
+          <span style="color:var(--text-muted)">HC-SR04 mesafe sensörü yem kabının üstüne monte edilir. Kap doluyken mesafe kısa = %100, boşaldıkça mesafe artar = %0'a düşer.</span>
+        </li>
+        <li><strong>WiFi değiştirmek istiyorum, ne yapmalıyım?</strong><br>
+          <span style="color:var(--text-muted)">Arduino kodundaki WIFI_SSID ve WIFI_PASSWORD değerlerini güncelleyip ESP'ye tekrar yükleyin.</span>
+        </li>
+        <li><strong>Cihaz "Çevrimdışı" görünüyor, ne yapmalıyım?</strong><br>
+          <span style="color:var(--text-muted)">WiFi bağlantısını, güç kaynağını ve SERVER_URL'nin doğru olduğunu kontrol edin. ESP'yi resetleyip Serial Monitor'dan log'ları inceleyin.</span>
+        </li>
+        <li><strong>Başka bir akvaryum için ikinci cihaz ekleyebilir miyim?</strong><br>
+          <span style="color:var(--text-muted)">Evet! Dashboard'dan "➕ Yeni Cihaz" butonuyla yeni token oluşturup ikinci ESP'ye yükleyebilirsiniz.</span>
+        </li>
+      </ul>
+    </div>
+
+    <div style="text-align:center; margin-top:32px;">
+      <a href="/" class="btn btn-primary" style="display:inline-flex; width:auto;">
+        🚀 Hemen Başla
+      </a>
+    </div>
+  </div>
+
+  <script>
+    // Animate steps on scroll
+    const steps = document.querySelectorAll('.step');
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.style.opacity = '1';
+          entry.target.style.transform = 'translateY(0)';
+        }
+      });
+    }, { threshold: 0.1 });
+
+    steps.forEach((step, i) => {
+      step.style.opacity = '0';
+      step.style.transform = 'translateY(20px)';
+      step.style.transition = `all 0.5s ease ${i * 0.1}s`;
+      observer.observe(step);
+    });
+  </script>
+</body>
+</html>
