@@ -5,6 +5,10 @@ const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 const { pool } = require('../db/database');
 const { authenticateToken } = require('../middleware/auth');
+const dns = require('dns');
+
+// Fix IPv6 ENETUNREACH error on Render
+dns.setDefaultResultOrder('ipv4first');
 
 const router = express.Router();
 
