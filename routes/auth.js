@@ -1,15 +1,10 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const crypto = require('crypto');
-const sgMail = require('@sendgrid/mail');
 const { pool } = require('../db/database');
 const { authenticateToken } = require('../middleware/auth');
 
 const router = express.Router();
-
-// Initialize SendGrid
-sgMail.setApiKey(process.env.SENDGRID_API_KEY || 'SG.dummy_key');
 
 // POST /api/auth/register
 router.post('/register', async (req, res) => {
