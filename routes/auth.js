@@ -89,8 +89,8 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// POST /api/auth/forgot-password
-router.post('/forgot-password', async (req, res) => {
+// POST /api/auth/get-security-question
+router.post('/get-security-question', async (req, res) => {
   try {
     const { identifier } = req.body;
     if (!identifier) {
