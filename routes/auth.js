@@ -2,26 +2,14 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 const { pool } = require('../db/database');
 const { authenticateToken } = require('../middleware/auth');
-const dns = require('dns');
-
-// Fix IPv6 ENETUNREACH error on Render
-dns.setDefaultResultOrder('ipv4first');
 
 const router = express.Router();
 
-// Email transporter
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || 'smtp.gmail.com',
-  port: parseInt(process.env.SMTP_PORT || '587'),
-  secure: false,
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS
-  }
-});
+// Initialize Resend
+const resend = new Resend(process.env.RESEND_API_KEY || 're_dummy_key');
 
 // POST /api/auth/register
 router.post('/register', async (req, res) => {
@@ -141,8 +129,8 @@ router.post('/forgot-password', async (req, res) => {
 
     // Send email
     try {
-      await transporter.sendMail({
-        from: process.env.SMTP_FROM || process.env.SMTP_USER,
+      const { data, error } = await resend.emails.send({
+        from: process.env.SMTP_FROM || 'FishFeeder <onboarding@resend.dev>',
         to: email,
         subject: 'Fish Feeder - Password Reset',
         html: `
@@ -160,8 +148,13 @@ router.post('/forgot-password', async (req, res) => {
           </div>
         `
       });
+
+      if (error) {
+        console.error('Email send API error:', error);
+        return res.status(500).json({ error: 'Failed to send email via API. Check Resend Key.' });
+      }
     } catch (emailErr) {
-      console.error('Email send error:', emailErr);
+      console.error('Email send exception:', emailErr);
       return res.status(500).json({ error: 'Failed to send email. Please try again later.' });
     }
 
