@@ -20,11 +20,13 @@ async function initDB() {
       )
     `);
 
-    // Add email and profile_updated columns if they don't exist
+    // Add columns dynamically for existing databases
     await client.query(`
       DO $$ BEGIN
         ALTER TABLE users ADD COLUMN IF NOT EXISTS email TEXT UNIQUE;
         ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_updated BOOLEAN DEFAULT FALSE;
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS security_question TEXT;
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS security_answer TEXT;
       EXCEPTION WHEN OTHERS THEN NULL;
       END $$;
     `);

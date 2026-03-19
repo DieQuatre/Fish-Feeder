@@ -55,6 +55,20 @@
           <input type="email" id="regEmail" data-i18n="reg.email.placeholder" placeholder="your@email.com" autocomplete="email" required>
         </div>
         <div class="form-group">
+          <label for="regQuestion" data-i18n="sec.question">Security Question</label>
+          <select id="regQuestion" required>
+            <option value="" disabled selected data-i18n="sec.select">Select a question...</option>
+            <option value="What was the name of your primary school teacher?" data-i18n="sec.q1">What was the name of your primary school teacher?</option>
+            <option value="What is the name of your first pet?" data-i18n="sec.q2">What is the name of your first pet?</option>
+            <option value="What is your favorite color?" data-i18n="sec.q3">What is your favorite color?</option>
+            <option value="What city were you born in?" data-i18n="sec.q4">What city were you born in?</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="regAnswer" data-i18n="sec.answer">Answer</label>
+          <input type="text" id="regAnswer" autocomplete="off" required>
+        </div>
+        <div class="form-group">
           <label for="regPassword" data-i18n="reg.password">Password</label>
           <input type="password" id="regPassword" data-i18n="reg.password.placeholder" placeholder="At least 6 characters" autocomplete="new-password" required>
         </div>
@@ -69,13 +83,34 @@
 
       <!-- Forgot Password Form -->
       <form id="forgotForm" style="display:none;">
-        <div class="form-group">
-          <label for="forgotEmail" data-i18n="forgot.email">Email Address</label>
-          <input type="email" id="forgotEmail" data-i18n="forgot.email.placeholder" placeholder="Enter your registered email" autocomplete="email" required>
+        <div id="forgotStep1">
+          <p style="color:var(--text-secondary); font-size:0.9rem; margin-bottom:20px; text-align:center;" data-i18n="forgot.desc">Enter your username or email to reset your password.</p>
+          <div class="form-group">
+            <label for="forgotIdentifier" data-i18n="forgot.identifier">Username or Email</label>
+            <input type="text" id="forgotIdentifier" required>
+          </div>
+          <button type="button" class="btn btn-primary" id="getQuestionBtn" data-i18n="forgot.btn1">
+            🔍 Find Account
+          </button>
         </div>
-        <button type="submit" class="btn btn-primary" id="forgotBtn" data-i18n="forgot.btn">
-          📧 Send Reset Link
-        </button>
+
+        <div id="forgotStep2" style="display:none;">
+          <div class="form-group">
+            <label data-i18n="sec.question">Security Question</label>
+            <div id="displayQuestion" style="padding: 12px; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 8px; font-weight: 500; font-size: 0.95rem; margin-bottom: 12px; color: var(--accent-blue);"></div>
+          </div>
+          <div class="form-group">
+            <label for="forgotAnswer" data-i18n="sec.answer">Answer</label>
+            <input type="text" id="forgotAnswer" autocomplete="off" required>
+          </div>
+          <div class="form-group">
+            <label for="forgotNewPassword" data-i18n="forgot.newPassword">New Password</label>
+            <input type="password" id="forgotNewPassword" required>
+          </div>
+          <button type="submit" class="btn btn-success" id="resetPasswordBtn" data-i18n="forgot.btn2">
+            🔐 Reset Password
+          </button>
+        </div>
       </form>
 
       <div class="toggle-link" id="toggleLink">

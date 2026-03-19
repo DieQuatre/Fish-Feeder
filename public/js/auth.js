@@ -37,6 +37,10 @@ function showForm(state) {
     forgotForm.style.display = 'block';
     forgotLink.style.display = 'none';
     toggleLink.innerHTML = `<a href="#" id="toggleAuth" data-i18n="login.signin">${t('forgot.backToLogin')}</a>`;
+    // Reset forgot steps
+    document.getElementById('forgotStep1').style.display = 'block';
+    document.getElementById('forgotStep2').style.display = 'none';
+    document.getElementById('forgotForm').reset();
   }
 
   // Re-attach toggle listener
@@ -120,10 +124,12 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
 
   const username = document.getElementById('regUsername').value.trim();
   const email = document.getElementById('regEmail').value.trim();
+  const securityQuestion = document.getElementById('regQuestion').value;
+  const securityAnswer = document.getElementById('regAnswer').value.trim();
   const password = document.getElementById('regPassword').value;
   const passwordConfirm = document.getElementById('regPasswordConfirm').value;
 
-  if (!username || !email || !password || !passwordConfirm) {
+  if (!username || !email || !password || !passwordConfirm || !securityQuestion || !securityAnswer) {
     showError(t('err.fillAll'));
     return;
   }
@@ -136,7 +142,7 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
     const res = await fetch(`${API_BASE}/api/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, email, password })
+      body: JSON.stringify({ username, email, password, securityQuestion, securityAnswer })
     });
     const data = await res.json();
 
@@ -153,42 +159,77 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
   }
 });
 
-// Forgot Password
+// Forgot Password Step 1 (Get Question)
+document.getElementById('getQuestionBtn').addEventListener('click', async () => {
+  hideMessages();
+  const identifier = document.getElementById('forgotIdentifier').value.trim();
+  if (!identifier) {
+    showError(t('err.fillAll'));
+    return;
+  }
+
+  const btn = document.getElementById('getQuestionBtn');
+  btn.disabled = true;
+
+  try {
+    const res = await fetch(`${API_BASE}/api/auth/get-security-question`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ identifier })
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      showError(data.error || 'Account not found.');
+      btn.disabled = false;
+      return;
+    }
+
+    document.getElementById('displayQuestion').textContent = data.question;
+    document.getElementById('forgotStep1').style.display = 'none';
+    document.getElementById('forgotStep2').style.display = 'block';
+  } catch (err) {
+    showError(t('err.serverDown'));
+    btn.disabled = false;
+  }
+});
+
+// Forgot Password Step 2 (Reset Password)
 document.getElementById('forgotForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   hideMessages();
 
-  const email = document.getElementById('forgotEmail').value.trim();
-  if (!email) {
-    showError(t('err.emailRequired'));
+  const identifier = document.getElementById('forgotIdentifier').value.trim();
+  const answer = document.getElementById('forgotAnswer').value.trim();
+  const newPassword = document.getElementById('forgotNewPassword').value;
+
+  if (!answer || !newPassword) {
+    showError(t('err.fillAll'));
     return;
   }
 
-  const btn = document.getElementById('forgotBtn');
+  const btn = document.getElementById('resetPasswordBtn');
   btn.disabled = true;
-  btn.textContent = '⏳...';
 
   try {
-    const res = await fetch(`${API_BASE}/api/auth/forgot-password`, {
+    const res = await fetch(`${API_BASE}/api/auth/reset-password-security`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email })
+      body: JSON.stringify({ identifier, answer, newPassword })
     });
     const data = await res.json();
 
     if (!res.ok) {
       showError(data.error || 'Failed.');
       btn.disabled = false;
-      btn.textContent = t('forgot.btn');
       return;
     }
 
-    showSuccess(t('forgot.success'));
-    btn.disabled = false;
-    btn.textContent = t('forgot.btn');
+    showSuccess(data.message || 'Password reset successfully!');
+    document.getElementById('forgotForm').reset();
+    setTimeout(() => { showForm('login'); }, 2500);
   } catch (err) {
     showError(t('err.serverDown'));
     btn.disabled = false;
-    btn.textContent = t('forgot.btn');
   }
 });

@@ -168,7 +168,7 @@ body {
   margin-bottom: 8px;
 }
 
-.form-group input {
+.form-group input, .form-group select {
   width: 100%;
   padding: 14px 16px;
   background: rgba(255, 255, 255, 0.06);
@@ -181,10 +181,15 @@ body {
   outline: none;
 }
 
-.form-group input:focus {
+.form-group input:focus, .form-group select:focus {
   border-color: var(--accent-blue);
   box-shadow: 0 0 0 3px var(--accent-blue-glow);
   background: rgba(255, 255, 255, 0.08);
+}
+
+.form-group select option {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
 }
 
 .form-group input::placeholder {

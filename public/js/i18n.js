@@ -179,6 +179,24 @@ const translations = {
     "err.passwordMismatch": "Passwords do not match.",
     "err.emailRequired": "Email is required.",
     "err.serverDown": "Could not connect to server.",
+
+    "sec.question": "Security Question",
+    "sec.select": "Select a question...",
+    "sec.q1": "What was the name of your primary school teacher?",
+    "sec.q2": "What is the name of your first pet?",
+    "sec.q3": "What is your favorite color?",
+    "sec.q4": "What city were you born in?",
+    "sec.answer": "Answer",
+    "forgot.desc": "Enter your username or email to reset your password.",
+    "forgot.identifier": "Username or Email",
+    "forgot.btn1": "🔍 Find Account",
+    "forgot.newPassword": "New Password",
+    "forgot.btn2": "🔐 Reset Password",
+    "profile.security": "Security Question",
+    "profile.securitySet": "✅ Security question is active.",
+    "profile.securityDesc": "Set a security question to recover your password instantly.",
+    "profile.saveSecurity": "💾 Save Security Question",
+    "profile.securitySaved": "Security question saved successfully!"
   },
 
   tr: {
@@ -357,6 +375,24 @@ const translations = {
     "err.passwordMismatch": "Şifreler eşleşmiyor.",
     "err.emailRequired": "E-posta adresi gerekli.",
     "err.serverDown": "Sunucuya bağlanılamadı.",
+
+    "sec.question": "Güvenlik Sorusu",
+    "sec.select": "Bir soru seçin...",
+    "sec.q1": "İlkokul öğretmeninizin adı nedir?",
+    "sec.q2": "İlk evcil hayvanınızın adı nedir?",
+    "sec.q3": "En sevdiğiniz renk nedir?",
+    "sec.q4": "Doğduğunuz şehir neresidir?",
+    "sec.answer": "Cevap",
+    "forgot.desc": "Şifrenizi sıfırlamak için kullanıcı adınızı veya e-posta adresinizi girin.",
+    "forgot.identifier": "Kullanıcı Adı veya E-posta Adresi",
+    "forgot.btn1": "🔍 Hesabı Bul",
+    "forgot.newPassword": "Yeni Şifre",
+    "forgot.btn2": "🔐 Şifreyi Sıfırla",
+    "profile.security": "Güvenlik Sorusu",
+    "profile.securitySet": "✅ Güvenlik sorusu ayarlandı.",
+    "profile.securityDesc": "E-posta beklemeden şifrenizi anında sıfırlamak için bir güvenlik sorusu belirleyin.",
+    "profile.saveSecurity": "💾 Güvenlik Sorusunu Kaydet",
+    "profile.securitySaved": "Güvenlik sorusu başarıyla kaydedildi!"
   }
 };
 

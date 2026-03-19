@@ -337,6 +337,14 @@ async function openProfileModal() {
       saveBtn.disabled = false;
       saveBtn.textContent = t('profile.saveBtn');
     }
+
+    if (data.hasSecurityQuestion) {
+      document.getElementById('securityForm').style.display = 'none';
+      document.getElementById('securityStatusMsg').style.display = 'block';
+    } else {
+      document.getElementById('securityForm').style.display = 'block';
+      document.getElementById('securityStatusMsg').style.display = 'none';
+    }
   }
 
   document.getElementById('profileModal').classList.add('active');
@@ -391,6 +399,50 @@ document.getElementById('profileForm').addEventListener('submit', async (e) => {
     document.getElementById('profileEmail').disabled = true;
     document.getElementById('profileSaveBtn').disabled = true;
     document.getElementById('profileSaveBtn').textContent = t('profile.alreadyUpdated');
+  } catch (err) {
+    errorEl.textContent = err.message || t('err.serverDown');
+    errorEl.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+document.getElementById('securityForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const securityQuestion = document.getElementById('profileQuestion').value;
+  const securityAnswer = document.getElementById('profileSecurityAnswer').value.trim();
+  
+  const errorEl = document.getElementById('profileError');
+  const msgEl = document.getElementById('profileMsg');
+  errorEl.style.display = 'none';
+  msgEl.style.display = 'none';
+
+  if (!securityQuestion || !securityAnswer) {
+    errorEl.textContent = t('err.fillAll');
+    errorEl.style.display = 'block';
+    return;
+  }
+
+  const btn = document.getElementById('securitySaveBtn');
+  btn.disabled = true;
+
+  try {
+    const res = await fetch(`${API_BASE}/api/auth/security-question`, {
+      method: 'PUT',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ securityQuestion, securityAnswer })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    
+    msgEl.textContent = t('profile.securitySaved') || 'Security question saved successfully!';
+    msgEl.style.display = 'block';
+    
+    document.getElementById('securityForm').style.display = 'none';
+    document.getElementById('securityStatusMsg').style.display = 'block';
   } catch (err) {
     errorEl.textContent = err.message || t('err.serverDown');
     errorEl.style.display = 'block';

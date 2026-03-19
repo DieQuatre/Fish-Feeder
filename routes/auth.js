@@ -14,10 +14,10 @@ sgMail.setApiKey(process.env.SENDGRID_API_KEY || 'SG.dummy_key');
 // POST /api/auth/register
 router.post('/register', async (req, res) => {
   try {
-    const { username, email, password } = req.body;
+    const { username, email, password, securityQuestion, securityAnswer } = req.body;
 
-    if (!username || !email || !password) {
-      return res.status(400).json({ error: 'Username, email and password are required.' });
+    if (!username || !email || !password || !securityQuestion || !securityAnswer) {
+      return res.status(400).json({ error: 'All fields including security question and answer are required.' });
     }
     if (username.length < 3) {
       return res.status(400).json({ error: 'Username must be at least 3 characters.' });
@@ -40,9 +40,11 @@ router.post('/register', async (req, res) => {
     }
 
     const password_hash = bcrypt.hashSync(password, 10);
+    const answer_hash = bcrypt.hashSync(securityAnswer.trim().toLowerCase(), 10);
+    
     const result = await pool.query(
-      'INSERT INTO users (username, email, password_hash) VALUES ($1, $2, $3) RETURNING id',
-      [username, email, password_hash]
+      'INSERT INTO users (username, email, password_hash, security_question, security_answer) VALUES ($1, $2, $3, $4, $5) RETURNING id',
+      [username, email, password_hash, securityQuestion, answer_hash]
     );
     const id = result.rows[0].id;
 
@@ -95,109 +97,63 @@ router.post('/login', async (req, res) => {
 // POST /api/auth/forgot-password
 router.post('/forgot-password', async (req, res) => {
   try {
-    const { email } = req.body;
-
-    if (!email) {
-      return res.status(400).json({ error: 'Email is required.' });
+    const { identifier } = req.body;
+    if (!identifier) {
+      return res.status(400).json({ error: 'Username or email is required.' });
     }
 
-    const result = await pool.query('SELECT id, username FROM users WHERE email = $1', [email]);
+    const result = await pool.query('SELECT id, security_question FROM users WHERE username = $1 OR email = $2', [identifier, identifier]);
     
-    // Always return success (don't reveal if email exists)
     if (result.rows.length === 0) {
-      return res.json({ message: 'If an account with this email exists, a reset link will be sent.' });
+      return res.status(404).json({ error: 'User not found.' });
     }
 
     const user = result.rows[0];
 
-    // Generate reset token
-    const resetToken = crypto.randomBytes(32).toString('hex');
-    const expiresAt = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes
-
-    // Invalidate old tokens
-    await pool.query('UPDATE password_resets SET used = TRUE WHERE user_id = $1 AND used = FALSE', [user.id]);
-
-    // Save new token
-    await pool.query(
-      'INSERT INTO password_resets (user_id, token, expires_at) VALUES ($1, $2, $3)',
-      [user.id, resetToken, expiresAt]
-    );
-
-    // Build reset URL (remove trailing slash if any)
-    let baseUrl = process.env.APP_URL || `${req.protocol}://${req.get('host')}`;
-    baseUrl = baseUrl.replace(/\/$/, '');
-    const resetUrl = `${baseUrl}/reset-password?token=${resetToken}`;
-
-    // Send email via SendGrid
-    try {
-      const msg = {
-        to: email,
-        from: process.env.SMTP_FROM || 'onboarding@resend.dev', // Must be verified in SendGrid Single Sender
-        subject: 'Fish Feeder - Password Reset',
-        html: `
-          <div style="font-family:Arial,sans-serif;max-width:500px;margin:0 auto;padding:20px;">
-            <h2 style="color:#3B82F6;">🐟 Fish Feeder</h2>
-            <p>Hi <strong>${user.username}</strong>,</p>
-            <p>You requested a password reset. Click the button below to set a new password:</p>
-            <div style="text-align:center;margin:28px 0;">
-              <a href="${resetUrl}" style="background:linear-gradient(135deg,#3B82F6,#8B5CF6);color:white;padding:12px 32px;text-decoration:none;border-radius:8px;font-weight:bold;display:inline-block;">
-                Reset Password
-              </a>
-            </div>
-            <p style="color:#666;font-size:14px;">This link expires in 30 minutes.</p>
-            <p style="color:#999;font-size:12px;">If you didn't request this, you can ignore this email.</p>
-          </div>
-        `
-      };
-
-      await sgMail.send(msg);
-
-    } catch (emailErr) {
-      console.error('Email send exception:', emailErr);
-      if (emailErr.response) {
-        console.error(emailErr.response.body);
-      }
-      return res.status(500).json({ error: 'Failed to send email. Check SendGrid configuration.' });
+    if (!user.security_question) {
+      return res.status(400).json({ error: 'This account does not have a security question set up. Please contact an admin.' });
     }
 
-    res.json({ message: 'If an account with this email exists, a reset link will be sent.' });
+    res.json({ question: user.security_question });
   } catch (err) {
-    console.error('Forgot password error:', err);
+    console.error('Get security question error:', err);
     res.status(500).json({ error: 'Server error.' });
   }
 });
 
-// POST /api/auth/reset-password
-router.post('/reset-password', async (req, res) => {
+// POST /api/auth/reset-password-security
+router.post('/reset-password-security', async (req, res) => {
   try {
-    const { token, password } = req.body;
+    const { identifier, answer, newPassword } = req.body;
 
-    if (!token || !password) {
-      return res.status(400).json({ error: 'Token and new password are required.' });
+    if (!identifier || !answer || !newPassword) {
+      return res.status(400).json({ error: 'All fields are required.' });
     }
-    if (password.length < 6) {
+    if (newPassword.length < 6) {
       return res.status(400).json({ error: 'Password must be at least 6 characters.' });
     }
 
     const result = await pool.query(
-      'SELECT * FROM password_resets WHERE token = $1 AND used = FALSE AND expires_at > NOW()',
-      [token]
+      'SELECT id, username, security_answer FROM users WHERE username = $1 OR email = $2',
+      [identifier, identifier]
     );
 
     if (result.rows.length === 0) {
-      return res.status(400).json({ error: 'Invalid or expired reset link.' });
+      return res.status(404).json({ error: 'User not found.' });
     }
 
-    const resetRecord = result.rows[0];
-    const password_hash = bcrypt.hashSync(password, 10);
+    const user = result.rows[0];
+    const match = await bcrypt.compare(answer.trim().toLowerCase(), user.security_answer);
+
+    if (!match) {
+      return res.status(400).json({ error: 'Incorrect answer.' });
+    }
 
     // Update password
-    await pool.query('UPDATE users SET password_hash = $1 WHERE id = $2', [password_hash, resetRecord.user_id]);
+    const password_hash = bcrypt.hashSync(newPassword, 10);
+    await pool.query('UPDATE users SET password_hash = $1 WHERE id = $2', [password_hash, user.id]);
 
-    // Mark token as used
-    await pool.query('UPDATE password_resets SET used = TRUE WHERE id = $1', [resetRecord.id]);
-
-    res.json({ message: 'Password reset successful! You can now sign in.' });
+    res.json({ message: 'Password reset successful! You can now sign in.', username: user.username });
   } catch (err) {
     console.error('Reset password error:', err);
     res.status(500).json({ error: 'Server error.' });
@@ -207,11 +163,12 @@ router.post('/reset-password', async (req, res) => {
 // GET /api/auth/me
 router.get('/me', authenticateToken, async (req, res) => {
   try {
-    const result = await pool.query('SELECT id, username, email, profile_updated FROM users WHERE id = $1', [req.user.id]);
+    const result = await pool.query('SELECT id, username, email, profile_updated, security_question FROM users WHERE id = $1', [req.user.id]);
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'User not found.' });
     }
-    res.json(result.rows[0]);
+    const user = result.rows[0];
+    res.json({ ...user, hasSecurityQuestion: !!user.security_question });
   } catch (err) {
     console.error('Get profile error:', err);
     res.status(500).json({ error: 'Server error.' });
@@ -286,6 +243,31 @@ router.put('/password', authenticateToken, async (req, res) => {
     res.json({ message: 'Password changed successfully!' });
   } catch (err) {
     console.error('Change password error:', err);
+    res.status(500).json({ error: 'Server error.' });
+  }
+});
+
+// PUT /api/auth/security-question
+router.put('/security-question', authenticateToken, async (req, res) => {
+  try {
+    const { securityQuestion, securityAnswer } = req.body;
+    if (!securityQuestion || !securityAnswer) {
+      return res.status(400).json({ error: 'Question and answer are required.' });
+    }
+
+    const userCheck = await pool.query('SELECT security_question FROM users WHERE id = $1', [req.user.id]);
+    if (userCheck.rows[0].security_question) {
+      return res.status(400).json({ error: 'Security question is already set.' });
+    }
+
+    const answer_hash = bcrypt.hashSync(securityAnswer.trim().toLowerCase(), 10);
+    await pool.query('UPDATE users SET security_question = $1, security_answer = $2 WHERE id = $3', 
+      [securityQuestion, answer_hash, req.user.id]
+    );
+
+    res.json({ message: 'Security question saved successfully!' });
+  } catch (err) {
+    console.error('Set security question error:', err);
     res.status(500).json({ error: 'Server error.' });
   }
 });
