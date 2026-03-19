@@ -123,8 +123,9 @@ router.post('/forgot-password', async (req, res) => {
       [user.id, resetToken, expiresAt]
     );
 
-    // Build reset URL
-    const baseUrl = process.env.APP_URL || `${req.protocol}://${req.get('host')}`;
+    // Build reset URL (remove trailing slash if any)
+    let baseUrl = process.env.APP_URL || `${req.protocol}://${req.get('host')}`;
+    baseUrl = baseUrl.replace(/\/$/, '');
     const resetUrl = `${baseUrl}/reset-password?token=${resetToken}`;
 
     // Send email
