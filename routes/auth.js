@@ -2,14 +2,14 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
-const { Resend } = require('resend');
+const sgMail = require('@sendgrid/mail');
 const { pool } = require('../db/database');
 const { authenticateToken } = require('../middleware/auth');
 
 const router = express.Router();
 
-// Initialize Resend
-const resend = new Resend(process.env.RESEND_API_KEY || 're_dummy_key');
+// Initialize SendGrid
+sgMail.setApiKey(process.env.SENDGRID_API_KEY || 'SG.dummy_key');
 
 // POST /api/auth/register
 router.post('/register', async (req, res) => {
@@ -128,11 +128,11 @@ router.post('/forgot-password', async (req, res) => {
     baseUrl = baseUrl.replace(/\/$/, '');
     const resetUrl = `${baseUrl}/reset-password?token=${resetToken}`;
 
-    // Send email
+    // Send email via SendGrid
     try {
-      const { data, error } = await resend.emails.send({
-        from: process.env.SMTP_FROM || 'FishFeeder <onboarding@resend.dev>',
+      const msg = {
         to: email,
+        from: process.env.SMTP_FROM || 'onboarding@resend.dev', // Must be verified in SendGrid Single Sender
         subject: 'Fish Feeder - Password Reset',
         html: `
           <div style="font-family:Arial,sans-serif;max-width:500px;margin:0 auto;padding:20px;">
@@ -148,15 +148,16 @@ router.post('/forgot-password', async (req, res) => {
             <p style="color:#999;font-size:12px;">If you didn't request this, you can ignore this email.</p>
           </div>
         `
-      });
+      };
 
-      if (error) {
-        console.error('Email send API error:', error);
-        return res.status(500).json({ error: 'Failed to send email via API. Check Resend Key.' });
-      }
+      await sgMail.send(msg);
+
     } catch (emailErr) {
       console.error('Email send exception:', emailErr);
-      return res.status(500).json({ error: 'Failed to send email. Please try again later.' });
+      if (emailErr.response) {
+        console.error(emailErr.response.body);
+      }
+      return res.status(500).json({ error: 'Failed to send email. Check SendGrid configuration.' });
     }
 
     res.json({ message: 'If an account with this email exists, a reset link will be sent.' });
