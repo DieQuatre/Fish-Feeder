@@ -42,10 +42,9 @@ initDB().then(() => {
     console.log(`🐟 Fish Feeder Dashboard çalışıyor: http://localhost:${PORT}`);
   });
 
-  // ESP-01 için düz TCP/HTTP
-  const HTTP_PORT = process.env.HTTP_PORT || 8080;
-  require('http').createServer(app).listen(HTTP_PORT, () => {
-    console.log(`📡 ESP HTTP dinleniyor: ${HTTP_PORT}`);
+  // ESP-01 için TCP/HTTP (port 8080)
+  require('http').createServer(app).listen(8080, () => {
+    console.log(`📡 ESP TCP port 8080 dinleniyor`);
   });
 
 }).catch(err => {
