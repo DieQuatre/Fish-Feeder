@@ -41,6 +41,13 @@ initDB().then(() => {
   app.listen(PORT, () => {
     console.log(`🐟 Fish Feeder Dashboard çalışıyor: http://localhost:${PORT}`);
   });
+
+  // ESP-01 için düz TCP/HTTP
+  const HTTP_PORT = process.env.HTTP_PORT || 8080;
+  require('http').createServer(app).listen(HTTP_PORT, () => {
+    console.log(`📡 ESP HTTP dinleniyor: ${HTTP_PORT}`);
+  });
+
 }).catch(err => {
   console.error('Veritabanı başlatılamadı:', err);
   process.exit(1);
