@@ -57,7 +57,6 @@ async function apiDelete(url) {
 
 // ==================== TOAST ====================
 function showToast(message, type = 'info') {
-  // Remove existing toasts
   document.querySelectorAll('.toast').forEach(t => t.remove());
 
   const toast = document.createElement('div');
@@ -88,7 +87,6 @@ async function loadDevices() {
     return;
   }
 
-  // Use the first device for now
   currentDevice = devices[0];
   document.getElementById('noDeviceState').style.display = 'none';
   document.getElementById('deviceDashboard').style.display = 'block';
@@ -103,17 +101,14 @@ function updateDeviceUI() {
 
   const d = currentDevice;
 
-  // Device name
   document.getElementById('deviceName').textContent = d.name;
 
-  // Token (gizli başla)
   if (!tokenVisible) {
     document.getElementById('deviceToken').textContent = '•'.repeat(d.device_token.length);
   } else {
     document.getElementById('deviceToken').textContent = d.device_token;
   }
 
-  // Online status
   const isOnline = d.is_online === true || d.is_online === 1;
   const statusDot = document.getElementById('statusDot');
   const statusText = document.getElementById('statusText');
@@ -124,7 +119,7 @@ function updateDeviceUI() {
   statusText.className = isOnline ? 'status-online' : 'status-offline';
 
   if (d.last_seen) {
-    const lastSeen = new Date(d.last_seen + 'Z');
+    const lastSeen = new Date(d.last_seen); // 'Z' kaldırıldı
     const diff = Math.floor((Date.now() - lastSeen.getTime()) / 1000);
     if (diff < 60) {
       lastSeenText.textContent = t('dash.status.seenSec', {n: diff});
@@ -137,7 +132,6 @@ function updateDeviceUI() {
     lastSeenText.textContent = t('dash.status.notConnected');
   }
 
-  // Food level
   const foodLevel = d.food_level_percent;
   const foodBar = document.getElementById('foodBar');
   const foodValue = document.getElementById('foodLevelValue');
@@ -188,16 +182,14 @@ async function loadFeedHistory() {
 
   emptyState.style.display = 'none';
 
-  // Count today's feeds
   const today = new Date().toDateString();
-  const todayCount = logs.filter(l => new Date(l.fed_at + 'Z').toDateString() === today).length;
+  const todayCount = logs.filter(l => new Date(l.fed_at).toDateString() === today).length; // 'Z' kaldırıldı
   document.getElementById('feedCountToday').textContent = todayCount;
   document.getElementById('feedCountSub').textContent = todayCount > 0
     ? t('dash.feedCount.count', {n: todayCount})
     : t('dash.feedCount.none');
 
-  // Last feed
-  const lastFeed = new Date(logs[0].fed_at + 'Z');
+  const lastFeed = new Date(logs[0].fed_at); // 'Z' kaldırıldı
   document.getElementById('lastFeedTime').textContent = lastFeed.toLocaleString();
 
   const diffMs = Date.now() - lastFeed.getTime();
@@ -210,9 +202,8 @@ async function loadFeedHistory() {
     document.getElementById('lastFeedSub').textContent = t('dash.lastFeed.daysAgo', {n: Math.floor(diffMin / 1440)});
   }
 
-  // Build table
   tbody.innerHTML = logs.map(log => {
-    const date = new Date(log.fed_at + 'Z').toLocaleString();
+    const date = new Date(log.fed_at).toLocaleString(); // 'Z' kaldırıldı
     const badgeClass = log.triggered_by === 'auto' ? 'badge-auto' : 'badge-manual';
     const badgeText = log.triggered_by === 'auto' ? t('dash.history.auto') : t('dash.history.manual');
     return `
@@ -302,7 +293,6 @@ async function addDevice() {
   }
 }
 
-// Close modal on overlay click
 document.getElementById('addDeviceModal').addEventListener('click', (e) => {
   if (e.target === e.currentTarget) closeAddDeviceModal();
 });
@@ -319,12 +309,11 @@ async function openProfileModal() {
   document.getElementById('profileMsg').style.display = 'none';
   document.getElementById('profileError').style.display = 'none';
 
-  // Fetch latest profile info
   const data = await apiGet('/api/auth/me');
   if (data) {
     document.getElementById('profileUsername').value = data.username || '';
     document.getElementById('profileEmail').value = data.email || '';
-    
+
     const saveBtn = document.getElementById('profileSaveBtn');
     if (data.profile_updated) {
       document.getElementById('profileUsername').disabled = true;
@@ -363,7 +352,7 @@ document.getElementById('profileForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   const username = document.getElementById('profileUsername').value.trim();
   const email = document.getElementById('profileEmail').value.trim();
-  
+
   const errorEl = document.getElementById('profileError');
   const msgEl = document.getElementById('profileMsg');
   errorEl.style.display = 'none';
@@ -375,7 +364,7 @@ document.getElementById('profileForm').addEventListener('submit', async (e) => {
   try {
     const res = await fetch(`${API_BASE}/api/auth/profile`, {
       method: 'PUT',
-      headers: { 
+      headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
       },
@@ -383,18 +372,16 @@ document.getElementById('profileForm').addEventListener('submit', async (e) => {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error);
-    
-    // Update local user data
+
     localStorage.setItem('ff_user', JSON.stringify(data.user));
     document.getElementById('userName').textContent = data.user.username;
     if (data.user.username) {
       document.getElementById('userAvatar').textContent = data.user.username.charAt(0).toUpperCase();
     }
-    
+
     msgEl.textContent = t('profile.saved');
     msgEl.style.display = 'block';
 
-    // Disable fields after first update
     document.getElementById('profileUsername').disabled = true;
     document.getElementById('profileEmail').disabled = true;
     document.getElementById('profileSaveBtn').disabled = true;
@@ -411,7 +398,7 @@ document.getElementById('securityForm').addEventListener('submit', async (e) => 
   e.preventDefault();
   const securityQuestion = document.getElementById('profileQuestion').value;
   const securityAnswer = document.getElementById('profileSecurityAnswer').value.trim();
-  
+
   const errorEl = document.getElementById('profileError');
   const msgEl = document.getElementById('profileMsg');
   errorEl.style.display = 'none';
@@ -429,7 +416,7 @@ document.getElementById('securityForm').addEventListener('submit', async (e) => 
   try {
     const res = await fetch(`${API_BASE}/api/auth/security-question`, {
       method: 'PUT',
-      headers: { 
+      headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
       },
@@ -437,10 +424,10 @@ document.getElementById('securityForm').addEventListener('submit', async (e) => 
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error);
-    
+
     msgEl.textContent = t('profile.securitySaved') || 'Security question saved successfully!';
     msgEl.style.display = 'block';
-    
+
     document.getElementById('securityForm').style.display = 'none';
     document.getElementById('securityStatusMsg').style.display = 'block';
   } catch (err) {
@@ -455,7 +442,7 @@ document.getElementById('passwordForm').addEventListener('submit', async (e) => 
   e.preventDefault();
   const currentPassword = document.getElementById('profileCurrentPassword').value;
   const newPassword = document.getElementById('profileNewPassword').value;
-  
+
   const errorEl = document.getElementById('profileError');
   const msgEl = document.getElementById('profileMsg');
   errorEl.style.display = 'none';
@@ -473,7 +460,7 @@ document.getElementById('passwordForm').addEventListener('submit', async (e) => 
   try {
     const res = await fetch(`${API_BASE}/api/auth/password`, {
       method: 'PUT',
-      headers: { 
+      headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
       },
@@ -481,7 +468,7 @@ document.getElementById('passwordForm').addEventListener('submit', async (e) => 
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error);
-    
+
     msgEl.textContent = t('profile.passwordSaved');
     msgEl.style.display = 'block';
     document.getElementById('passwordForm').reset();
@@ -495,7 +482,6 @@ document.getElementById('passwordForm').addEventListener('submit', async (e) => 
 
 // ==================== POLLING ====================
 function startPolling() {
-  // Poll every 5 seconds
   pollInterval = setInterval(async () => {
     if (!currentDevice) return;
     const data = await apiGet('/api/devices');
